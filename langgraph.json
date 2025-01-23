@@ -1,0 +1,10 @@
+{
+    "dependencies": ["."],
+    "graphs": {
+      "agent": "./slack_ai_agent/agents/simple_agent.py:graph"
+    },
+    "env": ".env",
+    "auth": {
+      "path": "slack_ai_agent/agents/security/auth.py:auth"
+    }
+}

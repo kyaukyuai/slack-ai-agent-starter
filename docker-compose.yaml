@@ -1,0 +1,30 @@
+services:
+ web:
+   build: .
+   ports:
+     - "3000:3000"
+   environment:
+     - PYTHONPATH=/app
+     - SLACK_SIGNING_SECRET=${SLACK_SIGNING_SECRET}
+     - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
+     - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+     - TAVILY_API_KEY=${TAVILY_API_KEY}
+     - WEB_HOST=0.0.0.0
+   volumes:
+     - ./.env:/app/.env
+     - ./slack_ai_agent:/app/slack_ai_agent
+   command: ["python", "slack_ai_agent/slack/app.py", "--host", "0.0.0.0"]
+
+ langgraph:
+   build: .
+   ports:
+     - "2024:2024"
+   environment:
+     - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
+     - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+     - TAVILY_API_KEY=${TAVILY_API_KEY}
+     - LANGGRAPH_HOST=0.0.0.0
+   volumes:
+     - ./.env:/app/.env
+     - ./slack_ai_agent:/app/slack_ai_agent
+   command: ["langgraph", "dev", "--host", "0.0.0.0"]
