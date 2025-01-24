@@ -28,6 +28,61 @@ def setup_event_handlers(app: App) -> None:
         app: The Slack Bolt application instance.
     """
 
+    @app.event("app_home_opened")
+    def update_home_tab(client: Any, event: Dict[str, Any], logger: Any) -> None:
+        """Update the app home tab when a user opens it.
+
+        Args:
+            client: The Slack client instance
+            event: The event data
+            logger: Logger instance
+        """
+        try:
+            client.views_publish(
+                user_id=event["user"],
+                view={
+                    "type": "home",
+                    "callback_id": "home_view",
+                    "blocks": [
+                        {
+                            "type": "section",
+                            "text": {
+                                "type": "mrkdwn",
+                                "text": "*Datable Agent へようこそ！* :wave:",
+                            },
+                        },
+                        {"type": "divider"},
+                        {
+                            "type": "section",
+                            "text": {
+                                "type": "mrkdwn",
+                                "text": "*使い方*\n\n• メンションをつけて質問を投げかけてください（例：@Datable Agent こんにちは）\n• スレッド内の会話履歴を参考に回答を生成します\n• 定型業務は設定画面から設定したワークフローを実行します\n• 非定型業務はオンデマンドで実行します",
+                            },
+                        },
+                        {"type": "divider"},
+                        {
+                            "type": "section",
+                            "text": {
+                                "type": "mrkdwn",
+                                "text": "*コマンド*\n\n• `help` - ボットの基本的な説明を表示します",
+                            },
+                        },
+                        {"type": "divider"},
+                        {
+                            "type": "context",
+                            "elements": [
+                                {
+                                    "type": "mrkdwn",
+                                    "text": "ご不明な点がありましたら、`help`コマンドをお試しください :sparkles:",
+                                }
+                            ],
+                        },
+                    ],
+                },
+            )
+        except Exception as e:
+            logger.error(f"Error updating home tab: {e}")
+
     @app.event("app_mention")
     def handle_app_mention(event: Dict[str, Any], say: Any) -> None:
         """アプリメンションイベントを処理する.
