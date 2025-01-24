@@ -19,6 +19,7 @@ if __name__ == "__main__":
 from dotenv import load_dotenv
 from slack_bolt import App
 
+from slack_ai_agent.slack.app_mention_handler import setup_app_mention_handlers
 from slack_ai_agent.slack.bot_handler import setup_bot_handlers
 
 
@@ -40,6 +41,7 @@ app = init_app()
 
 # Set up AI agent integration
 setup_bot_handlers(app)
+setup_app_mention_handlers(app)
 
 
 @app.message("hello")
