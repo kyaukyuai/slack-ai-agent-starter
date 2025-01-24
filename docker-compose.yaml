@@ -4,6 +4,7 @@ services:
    ports:
      - "3000:3000"
    environment:
+     - PYTHONPATH=/app
      - SLACK_SIGNING_SECRET=${SLACK_SIGNING_SECRET}
      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
