@@ -17,9 +17,9 @@ if __name__ == "__main__":
 from dotenv import load_dotenv
 from slack_bolt import App
 
-from slack_ai_agent.slack.action_handlers import setup_action_handlers
-from slack_ai_agent.slack.event_handlers import setup_event_handlers
-from slack_ai_agent.slack.message_handlers import setup_message_handlers
+from slack_ai_agent.slack.handler.action_handlers import setup_action_handlers
+from slack_ai_agent.slack.handler.event_handlers import setup_event_handlers
+from slack_ai_agent.slack.handler.message_handlers import setup_message_handlers
 
 
 def init_app() -> App:
