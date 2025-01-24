@@ -90,9 +90,14 @@ class SlackBotApp:
             raise
 
 
+def is_development_mode() -> bool:
+    """Check if the application is running in development mode."""
+    return os.environ.get("ENVIRONMENT", "development").lower() == "development"
+
+
 def main() -> None:
     """Main entry point for the application with auto-reloading support."""
-    if os.environ.get("HUPPER_RELOAD") is None:
+    if is_development_mode() and os.environ.get("HUPPER_RELOAD") is None:
         import hupper
 
         hupper.start_reloader("slack_ai_agent.slack.app.main")
