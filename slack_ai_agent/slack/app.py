@@ -81,6 +81,11 @@ def action_button_click(body: Dict[str, Any], ack: Any, say: Any) -> None:
     say(f"<@{body['user']['id']}> clicked the button")
 
 
+@app.event("message")
+def handle_message_events(body, logger):
+    logger.info(body)
+
+
 def start_app(port: int = 3000) -> None:
     """Start the Slack bot application.
 
