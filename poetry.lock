@@ -736,24 +736,6 @@ files = [
 ]
 
 [[package]]
-name = "honcho"
-version = "2.0.0"
-description = "Honcho: a Python clone of Foreman. For managing Procfile-based applications."
-optional = false
-python-versions = "*"
-files = [
-    {file = "honcho-2.0.0-py3-none-any.whl", hash = "sha256:56dcd04fc72d362a4befb9303b1a1a812cba5da283526fbc6509be122918ddf3"},
-    {file = "honcho-2.0.0.tar.gz", hash = "sha256:af3815c03c634bf67d50f114253ea9fef72ecff26e4fd06b29234789ac5b8b2e"},
-]
-
-[package.dependencies]
-colorama = {version = "*", markers = "sys_platform == \"win32\""}
-
-[package.extras]
-docs = ["sphinx"]
-export = ["jinja2 (>=3.1.2,<4)"]
-
-[[package]]
 name = "httpcore"
 version = "1.0.7"
 description = "A minimal low-level HTTP client."
@@ -2763,4 +2745,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<4.0"
-content-hash = "9538b21e1e32ac1fbdbeed3b39e459e506beed873a03dbc578fdcafd1ea90c6c"
+content-hash = "0b753c8e40ba03438f11b91e560ae3c70b56a34a1002efb8c33ee5dd7b406c34"

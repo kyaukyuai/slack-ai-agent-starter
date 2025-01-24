@@ -28,7 +28,6 @@ ENV POETRY_NO_INTERACTION=1 \
 COPY pyproject.toml poetry.lock ./
 COPY slack_ai_agent/ ./slack_ai_agent/
 COPY langgraph.json ./
-COPY Procfile .env.example ./
 
 # Install dependencies
 RUN poetry install --only main

@@ -45,7 +45,7 @@ def setup_message_handlers(app: App) -> None:
                     "type": "section",
                     "text": {
                         "type": "mrkdwn",
-                        "text": f"Hey there <@{message['user']}>!",
+                        "text": f"Hey there <@{message['user']}>!!!",
                     },
                     "accessory": {
                         "type": "button",
