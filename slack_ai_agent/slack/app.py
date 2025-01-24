@@ -7,8 +7,6 @@ It handles basic message events, interactive button clicks, and AI agent integra
 import os
 import sys
 from pathlib import Path
-from typing import Any
-from typing import Dict
 
 
 # Add the project root to Python path when running this file directly
@@ -19,8 +17,9 @@ if __name__ == "__main__":
 from dotenv import load_dotenv
 from slack_bolt import App
 
-from slack_ai_agent.slack.app_mention_handler import setup_app_mention_handlers
-from slack_ai_agent.slack.bot_handler import setup_bot_handlers
+from slack_ai_agent.slack.action_handlers import setup_action_handlers
+from slack_ai_agent.slack.event_handlers import setup_event_handlers
+from slack_ai_agent.slack.message_handlers import setup_message_handlers
 
 
 def init_app() -> App:
@@ -39,51 +38,10 @@ def init_app() -> App:
 
 app = init_app()
 
-# Set up AI agent integration
-setup_bot_handlers(app)
-setup_app_mention_handlers(app)
-
-
-@app.message("hello")
-def message_hello(message: Dict[str, Any], say: Any) -> None:
-    """Handle incoming messages containing 'hello'.
-
-    Args:
-        message: The incoming message event data.
-        say: Function for sending messages to the channel.
-    """
-    say(
-        blocks=[
-            {
-                "type": "section",
-                "text": {"type": "mrkdwn", "text": f"Hey there <@{message['user']}>!"},
-                "accessory": {
-                    "type": "button",
-                    "text": {"type": "plain_text", "text": "Click Me"},
-                    "action_id": "button_click",
-                },
-            }
-        ],
-        text=f"Hey there <@{message['user']}>!",
-    )
-
-
-@app.action("button_click")
-def action_button_click(body: Dict[str, Any], ack: Any, say: Any) -> None:
-    """Handle button click actions.
-
-    Args:
-        body: The action event data.
-        ack: Function to acknowledge the action.
-        say: Function for sending messages to the channel.
-    """
-    ack()
-    say(f"<@{body['user']['id']}> clicked the button")
-
-
-@app.event("message")
-def handle_message_events(body, logger):
-    logger.info(body)
+# Set up handlers
+setup_message_handlers(app)
+setup_action_handlers(app)
+setup_event_handlers(app)
 
 
 def start_app(port: int = 3000) -> None:
