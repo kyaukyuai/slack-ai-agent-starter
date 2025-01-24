@@ -799,6 +799,21 @@ socks = ["socksio (==1.*)"]
 zstd = ["zstandard (>=0.18.0)"]
 
 [[package]]
+name = "hupper"
+version = "1.12.1"
+description = "Integrated process monitor for developing and reloading daemons."
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "hupper-1.12.1-py3-none-any.whl", hash = "sha256:e872b959f09d90be5fb615bd2e62de89a0b57efc037bdf9637fb09cdf8552b19"},
+    {file = "hupper-1.12.1.tar.gz", hash = "sha256:06bf54170ff4ecf4c84ad5f188dee3901173ab449c2608ad05b9bfd6b13e32eb"},
+]
+
+[package.extras]
+docs = ["Sphinx", "pylons-sphinx-themes", "setuptools", "watchdog"]
+testing = ["mock", "pytest", "pytest-cov", "watchdog"]
+
+[[package]]
 name = "identify"
 version = "2.6.6"
 description = "File identification library for Python"
@@ -2748,4 +2763,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<4.0"
-content-hash = "b34daed2e3ab3409c3801d7ab39abbfce5adafad104e23f54e2cb692e69d0f52"
+content-hash = "f31160d798c362203dcf8dd8500cd7c15c9fe530fe33f06b8b9c385786001930"

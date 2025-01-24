@@ -24,6 +24,7 @@ pre-commit = "^4.1.0"
 mypy = "^1.14.1"
 langgraph-cli = {extras = ["inmem"], version = "^0.1.65"}
 honcho = "^2.0.0"
+hupper = "^1.12.1"
 
 [build-system]
 requires = ["poetry-core"]
