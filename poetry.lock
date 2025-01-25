@@ -1257,13 +1257,13 @@ msgpack = ">=1.1.0,<2.0.0"
 
 [[package]]
 name = "langgraph-cli"
-version = "0.1.68"
+version = "0.1.69"
 description = "CLI for interacting with LangGraph API"
 optional = false
 python-versions = "<4.0.0,>=3.9.0"
 files = [
-    {file = "langgraph_cli-0.1.68-py3-none-any.whl", hash = "sha256:e1acfc3e62f3f822ba1b2533124f2f4ae9ed65f59e0663413e12632cad31d4f1"},
-    {file = "langgraph_cli-0.1.68.tar.gz", hash = "sha256:03916187041c5aee7826898657d91de4ad0699fc753b512bb658690b6cfe5b90"},
+    {file = "langgraph_cli-0.1.69-py3-none-any.whl", hash = "sha256:5228607a16150cbacd6d84da81c48d38a3b903823a94e2e26516c7e4805dc494"},
+    {file = "langgraph_cli-0.1.69.tar.gz", hash = "sha256:804bd93bad0fa7b37f663e1792bffcb6382246eaca1bc24f9b930fabde4fb38e"},
 ]
 
 [package.dependencies]
