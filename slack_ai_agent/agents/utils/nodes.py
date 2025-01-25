@@ -11,7 +11,7 @@ from .tools import tools
 
 tool_node = ToolNode(tools=tools)
 
-model = ChatAnthropic(model="claude-3-5-sonnet-20240620").bind_tools(tools)  # type: ignore
+model = ChatAnthropic(model="claude-3-5-sonnet-20241022").bind_tools(tools)  # type: ignore
 
 
 def call_model(state: MessagesState) -> Dict[str, List[BaseMessage]]:

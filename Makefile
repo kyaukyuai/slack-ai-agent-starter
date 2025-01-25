@@ -8,7 +8,7 @@ WEB_PORT := 3000
 # 開発環境のセットアップとチェック
 lint:
 	@echo "Running Ruff linter..."
-	poetry run ruff check . --fix --config=pyproject.toml
+	poetry run ruff check . --fix
 
 type-check:
 	@echo "Running mypy type checker..."
@@ -16,7 +16,7 @@ type-check:
 
 format:
 	@echo "Formatting code with Ruff..."
-	poetry run ruff format . --config=pyproject.toml
+	poetry run ruff format .
 
 pre-commit:
 	@echo "Running pre-commit checks..."
