@@ -2558,13 +2558,13 @@ typing = ["mypy (>=1.4)", "rich", "twisted"]
 
 [[package]]
 name = "tavily-python"
-version = "0.3.9"
+version = "0.5.0"
 description = "Python wrapper for the Tavily API"
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "tavily_python-0.3.9-py3-none-any.whl", hash = "sha256:8cfdb20bae88625fc31f5576a0b119c00b09cb31d4b149c991740266d31d1f3a"},
-    {file = "tavily_python-0.3.9.tar.gz", hash = "sha256:753516a737dafa62104261ded925d4d543af6246423586e2a305c77124473514"},
+    {file = "tavily_python-0.5.0-py3-none-any.whl", hash = "sha256:e874f6a04a56cdda80a505fe0b4f5d61d25372bd52a83e6773926fb297dcaa29"},
+    {file = "tavily_python-0.5.0.tar.gz", hash = "sha256:2c60b88203b630e1b37fc711913a1090ced6719b3f21089f25ec06e9e1602822"},
 ]
 
 [package.dependencies]
@@ -2918,4 +2918,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<4.0"
-content-hash = "fe82c68e3e02165e28c17689823d583c1d66204808924632ac338fbf40f948a2"
+content-hash = "0fac30ac4c09aa773542f65c3a98f322a36fe0bd5f6ae71863ad5ba33b341958"
