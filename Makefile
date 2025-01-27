@@ -57,12 +57,20 @@ logs:
 	tail -f langgraph.log web.log
 
 # Process management
-kill:
-	@echo "Killing development servers..."
-	@lsof -ti:${LANGGRAPH_PORT} | xargs kill -9 2>/dev/null || true
+kill: kill-dev-web kill-dev-langgraph
+	@echo "All development servers stopped and log files removed"
+
+kill-dev-web:
+	@echo "Killing web server..."
 	@lsof -ti:${WEB_PORT} | xargs kill -9 2>/dev/null || true
-	@rm -f langgraph.log web.log
-	@echo "Servers stopped and log files removed"
+	@rm -f web.log
+	@echo "Web server stopped and log file removed"
+
+kill-dev-langgraph:
+	@echo "Killing langgraph server..."
+	@lsof -ti:${LANGGRAPH_PORT} | xargs kill -9 2>/dev/null || true
+	@rm -f langgraph.log
+	@echo "LangGraph server stopped and log file removed"
 
 # Help
 help:
@@ -84,3 +92,5 @@ help:
 	@echo "Utilities:"
 	@echo "  make logs         - Tail both server log files"
 	@echo "  make kill         - Kill all development servers and remove log files"
+	@echo "  make kill-dev-web - Kill web server only and remove its log file"
+	@echo "  make kill-dev-langgraph - Kill LangGraph server only and remove its log file"
