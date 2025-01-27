@@ -107,12 +107,22 @@ def build_conversation_history(
 
             cleaned_text = re.sub(BOT_MENTION_PATTERN, "", message_text).strip()
             if cleaned_text:
-                messages.append(
-                    {
-                        "role": "assistant" if msg.get("bot_id") else "user",
-                        "content": cleaned_text,
-                    }
-                )
+                if msg.get("bot_id"):
+                    messages.append(
+                        {
+                            "role": "assistant",
+                            "content": cleaned_text,
+                        }
+                    )
+                else:
+                    # Add user_id to the content for human messages
+                    user_id = msg.get("user", "")
+                    messages.append(
+                        {
+                            "role": "human",
+                            "content": f"[user:{user_id}] {cleaned_text}",
+                        }
+                    )
 
     if question:
         messages.append({"role": "user", "content": question})
