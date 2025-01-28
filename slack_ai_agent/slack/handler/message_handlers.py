@@ -1,6 +1,7 @@
 """Slack message handlers module."""
 
 import logging
+import re
 from typing import Any
 from typing import Dict
 from typing import List
@@ -55,7 +56,7 @@ def setup_message_handlers(app: App) -> None:
             text=f"Hey there <@{message['user']}>!",
         )
 
-    @app.message("ai")
+    @app.message(re.compile(r"^ai\s+", re.IGNORECASE))
     def handle_ai_message(message: Dict[str, Any], say: Any) -> None:
         """Handle messages that should be processed by the AI agent.
 
