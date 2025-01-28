@@ -1,5 +1,6 @@
 """Test configuration module."""
 
+import re
 from typing import Any
 from typing import Dict
 
@@ -11,6 +12,7 @@ from slack_bolt import App
 @pytest.fixture
 def mock_handlers(mocker: MockerFixture) -> Dict[str, Any]:
     """Create mock handlers for testing."""
+    ai_pattern = re.compile(r"^ai\s+", re.IGNORECASE)
     return {
         "action": mocker.MagicMock(),
         "event": {
@@ -20,7 +22,7 @@ def mock_handlers(mocker: MockerFixture) -> Dict[str, Any]:
         },
         "message": {
             "hello": mocker.MagicMock(),
-            "ai": mocker.MagicMock(),
+            ai_pattern: mocker.MagicMock(),
         },
     }
 

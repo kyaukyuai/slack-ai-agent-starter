@@ -1,5 +1,6 @@
 """Test module for Slack message handlers."""
 
+import re
 from typing import Any
 from typing import Dict
 
@@ -22,9 +23,7 @@ def test_handle_hello_message(
     mock_app.message.assert_any_call("hello")
     handler = mock_handlers["message"]["hello"].handler
     message = {"user": "U123"}
-
     handler(message=message, say=mock_say)
-
     mock_say.assert_called_once()
     call_args = mock_say.call_args[1]
     blocks = call_args["blocks"]
@@ -41,6 +40,8 @@ def test_handle_ai_message(
     mocker: MockerFixture,
 ) -> None:
     """Test AI message handler."""
+    ai_pattern = re.compile(r"^ai\s+", re.IGNORECASE)
+
     mock_agent = mocker.MagicMock()
     mocker.patch(
         "slack_ai_agent.slack.handler.message_handlers.create_agent",
@@ -53,12 +54,10 @@ def test_handle_ai_message(
     )
 
     setup_message_handlers(mock_app)
-    mock_app.message.assert_any_call("ai")
-    handler = mock_handlers["message"]["ai"].handler
+    mock_app.message.assert_any_call(ai_pattern)
+    handler = mock_handlers["message"][ai_pattern].handler
     message = {"text": "ai test message", "ts": "123.456"}
-
     handler(message=message, say=mock_say)
-
     mock_say.assert_called_once_with(text="Test response", thread_ts="123.456")
 
 
@@ -75,13 +74,12 @@ def test_handle_ai_message_empty(
         return_value=mocker.MagicMock(),
     )
 
+    ai_pattern = re.compile(r"^ai\s+", re.IGNORECASE)
     setup_message_handlers(mock_app)
-    mock_app.message.assert_any_call("ai")
-    handler = mock_handlers["message"]["ai"].handler
+    mock_app.message.assert_any_call(ai_pattern)
+    handler = mock_handlers["message"][ai_pattern].handler
     message = {"text": "ai", "ts": "123.456"}
-
     handler(message=message, say=mock_say)
-
     mock_say.assert_called_once_with(
         text="Please provide a message for the AI agent to process.",
         thread_ts="123.456",
