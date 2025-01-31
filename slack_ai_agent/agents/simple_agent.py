@@ -9,8 +9,8 @@ from langgraph.graph import START
 from langgraph.graph import MessagesState
 from langgraph.graph import StateGraph
 
-from slack_ai_agent.agents.utils.nodes import call_model
-from slack_ai_agent.agents.utils.nodes import tool_node
+from slack_ai_agent.agents.utils.models import call_model
+from slack_ai_agent.agents.utils.models import tool_node
 
 
 # Define the config

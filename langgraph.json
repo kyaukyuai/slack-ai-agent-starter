@@ -1,7 +1,7 @@
 {
     "dependencies": ["."],
     "graphs": {
-      "agent": "./slack_ai_agent/agents/simple_agent.py:graph"
+      "agent": "./slack_ai_agent/agents/simple_long_term_memory_agent.py:graph"
     },
     "env": ".env",
     "auth": {
