@@ -188,6 +188,9 @@ def process_langgraph_stream(
         assistant_id="agent",
         input={"messages": messages},
         stream_mode="events",
+        config={
+            "configurable": {"user_id": "langgraph-studio-user"}
+        },  # TODO: change to user_id
     ):
         if chunk.data.get("event") == "on_chat_model_stream":
             content = chunk.data.get("data", {}).get("chunk", {}).get("content", [])
