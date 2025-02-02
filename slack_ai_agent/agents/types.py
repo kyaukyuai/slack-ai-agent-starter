@@ -17,6 +17,12 @@ class MessagesState(TypedDict):
     config: Dict[str, Any]
 
 
+class State(MessagesState):
+    """State class for managing conversation state with memory capabilities."""
+
+    recall_memories: List[str]
+
+
 class GraphConfig(TypedDict):
     """Configuration for the agent graph."""
 
