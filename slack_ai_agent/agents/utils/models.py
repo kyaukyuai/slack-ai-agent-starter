@@ -6,29 +6,15 @@ from typing import List
 from langchain.prompts import ChatPromptTemplate
 from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import BaseMessage
-from langchain_core.tools import Tool
-from langgraph.prebuilt import ToolNode
+from langchain_core.runnables import RunnableConfig
+from langgraph.graph import MessagesState
+from langgraph.store.base import BaseStore
 
-from .tools import create_tools
-from .tools import save_recall_memory
-from .tools import search_recall_memories
+from ..tools import create_tools
 
 
 # Initialize base model
 model = ChatAnthropic(model="claude-3-5-sonnet-20241022")  # type: ignore
-
-# Convert function tools to Tool instances
-save_recall_tool = Tool.from_function(
-    func=save_recall_memory,
-    name="save_recall_memory",
-    description="Save memory to vectorstore for later semantic retrieval.",
-)
-
-search_recall_tool = Tool.from_function(
-    func=search_recall_memories,
-    name="search_recall_memories",
-    description="Search for relevant memories.",
-)
 
 # Define the prompt template for the agent
 prompt = ChatPromptTemplate.from_messages(
@@ -71,11 +57,14 @@ prompt = ChatPromptTemplate.from_messages(
             " Instead, seamlessly incorporate your understanding of the user"
             " into your responses. Be attentive to subtle cues and underlying"
             " emotions. Adapt your communication style to match the user's"
-            " preferences and current emotional state. Use tools to persist"
-            " information you want to retain in the next conversation. If you"
-            " do call tools, all text preceding the tool call is an internal"
-            " message. Respond AFTER calling the tool, once you have"
-            " confirmation that the tool completed successfully.\n\n",
+            " preferences and current emotional state.\n\n"
+            "## Response Guidelines:\n"
+            "- Use markdown formatting to improve readability\n"
+            "- Avoid including timestamps in responses\n"
+            "- Do not repeat similar responses\n"
+            "- Use tools to persist information you want to retain\n"
+            "- If calling tools, all text before the tool call is internal\n"
+            "- Only respond AFTER tool calls complete successfully\n\n",
         ),
         ("placeholder", "{messages}"),
     ]
@@ -96,18 +85,33 @@ def call_model(state: Dict[str, List[BaseMessage]]) -> Dict[str, List[BaseMessag
     return {"messages": [response]}
 
 
-def create_memory_model(store):
-    """Create a model instance with memory capabilities.
+class State(MessagesState):
+    """State class for managing conversation state with memory capabilities."""
+
+    recall_memories: List[str]
+
+
+def agent(state: State, config: RunnableConfig, *, store: BaseStore) -> State:
+    """Process the current state and generate a response using the LLM.
 
     Args:
-        store: Memory storage backend
+        state (State): The current state of the conversation
+        config (RunnableConfig): Runtime configuration
+        store (BaseStore): Memory storage backend
 
     Returns:
-        Model instance configured with memory tools
+        State: Updated state with agent's response
     """
-    base_model = ChatAnthropic(model="claude-3-5-sonnet-20241022")  # type: ignore
-    memory_tools = create_tools(store=store)
-    return base_model.bind_tools(tools=memory_tools)
-
-
-tool_node = ToolNode(tools=create_tools())
+    bound = prompt | model.bind_tools(tools=create_tools())
+    recall_str = (
+        "<recall_memory>\n" + "\n".join(state["recall_memories"]) + "\n</recall_memory>"
+    )
+    prediction = bound.invoke(
+        {
+            "messages": state["messages"],
+            "recall_memories": recall_str,
+        }
+    )
+    return {
+        "messages": [prediction],  # type: ignore
+    }

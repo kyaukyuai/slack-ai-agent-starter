@@ -4,11 +4,12 @@ from typing import TypedDict
 from langgraph.graph import END
 from langgraph.graph import START
 from langgraph.graph import StateGraph
+from langgraph.prebuilt import ToolNode
 
+from slack_ai_agent.agents.tools import create_tools
 from slack_ai_agent.agents.utils import State
 from slack_ai_agent.agents.utils import agent
-from slack_ai_agent.agents.utils import load_memories_from_store
-from slack_ai_agent.agents.utils import tools
+from slack_ai_agent.agents.utils import load_memories
 
 
 # Define the config
@@ -35,9 +36,9 @@ def route_tools(state: State):
 
 # Create the graph and add nodes
 builder = StateGraph(State)
-builder.add_node("load_memories", load_memories_from_store)  # type: ignore
+builder.add_node("load_memories", load_memories)  # type: ignore
 builder.add_node("agent", agent)  # type: ignore
-builder.add_node("tools", tools)  # type: ignore
+builder.add_node("tools", ToolNode(tools=create_tools()))  # type: ignore
 
 # Add edges to the graph
 builder.add_edge(START, "load_memories")
