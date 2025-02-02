@@ -11,8 +11,8 @@ from langgraph.store.base import BaseStore
 
 from slack_ai_agent.agents.types import State
 
-from .tools import search
-from .tools import upsert_memory
+from ..tools import search
+from ..tools import upsert_memory
 
 
 # Initialize base model
@@ -95,7 +95,7 @@ def agent(state: State, config: RunnableConfig, *, store: BaseStore) -> State:
     Returns:
         State: Updated state with agent's response
     """
-    bound = prompt | model.bind_tools(tools=[search, upsert_memory])
+    bound = prompt | model.bind_tools(tools=[search, upsert_memory], tool_choice="auto")
     recall_str = (
         "<recall_memory>\n" + "\n".join(state["recall_memories"]) + "\n</recall_memory>"
     )

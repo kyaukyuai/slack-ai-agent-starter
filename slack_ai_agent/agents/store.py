@@ -16,7 +16,11 @@ def load_memories(
     namespace = ("memories", user_id)
 
     # Search for relevant memories based on the last message
-    memories = store.search(namespace, query=str(state["messages"][-1].content))
+    print("state: ", state)
+    memories = store.search(
+        namespace,
+        query=str(state["messages"][-1]["content"]),  # type: ignore
+    )
 
     # Format memories with context
     recall_memories = [

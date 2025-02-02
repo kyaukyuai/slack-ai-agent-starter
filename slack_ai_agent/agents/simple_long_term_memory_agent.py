@@ -6,11 +6,11 @@ from langgraph.graph import START
 from langgraph.graph import StateGraph
 from langgraph.prebuilt import ToolNode
 
-from .agent import agent
-from .store import load_memories
-from .tools import search
-from .tools import upsert_memory
-from .types import State
+from slack_ai_agent.agents.base import agent
+from slack_ai_agent.agents.store import load_memories
+from slack_ai_agent.agents.tools import search
+from slack_ai_agent.agents.tools import upsert_memory
+from slack_ai_agent.agents.types import State
 
 
 # Define the config
