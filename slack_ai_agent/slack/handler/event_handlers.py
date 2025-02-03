@@ -4,34 +4,20 @@ This module provides handlers for different types of Slack events.
 """
 
 import logging
-import os
 import re
 from typing import Any
 from typing import Dict
-from typing import Optional
 
 from dotenv import load_dotenv
 from slack_bolt import App
-from slack_sdk.web import SlackResponse
 
-from slack_ai_agent.slack.utils import execute_langgraph
+from slack_ai_agent.slack.handler.conversation import handle_conversation
 
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
 load_dotenv()
-
-QUESTION_TEMPLATE = """
-    Based on the given conversation history, please provide an answer in Markdown format.
-    Please output only the answer to the question, without stating that you will respond in Markdown format.
-    If the question is in English, respond in English. If the question is in Japanese, respond in Japanese......
-
-    Question:
-    {mention}
-
-    Output:
-"""
 
 HELP_MESSAGE = (
     "*Main Features of AI Assistant* :robot_face:\n\n"
@@ -130,60 +116,6 @@ def setup_event_handlers(app: App) -> None:
         except Exception as e:
             logger.error(f"Error updating home tab: {e}")
 
-    def get_thread_history(
-        app: App, channel: str, thread_ts: str
-    ) -> Optional[SlackResponse]:
-        """Retrieve conversation history from a thread.
-
-        Args:
-            app: Slack application instance
-            channel: Channel ID
-            thread_ts: Thread timestamp
-
-        Returns:
-            Optional[SlackResponse]: Thread conversation history
-        """
-        try:
-            return app.client.conversations_replies(channel=channel, ts=thread_ts)
-        except Exception as e:
-            logger.error(f"Error getting thread messages: {e}")
-            return None
-
-    def handle_conversation(
-        app: App,
-        mention: str,
-        say: Any,
-        user: str,
-        channel: str,
-        thread_ts: str,
-    ) -> None:
-        """Process a conversation.
-
-        Args:
-            app: Slack application instance
-            mention: Mention text
-            say: Function for sending messages
-            user: User ID
-            channel: Channel ID
-            thread_ts: Thread timestamp
-        """
-        thread_history = get_thread_history(app, channel, thread_ts)
-        question = QUESTION_TEMPLATE.format(mention=mention)
-
-        response = execute_langgraph(
-            question=question,
-            say=say,
-            user=user,
-            thread_ts=thread_ts,
-            thread_messages=thread_history,
-            app=app,
-            langgraph_url=os.environ.get("LANGGRAPH_URL"),
-            langgraph_token=os.environ.get("LANGGRAPH_TOKEN"),
-        )
-
-        if not response:
-            say("An error occurred")
-
     @app.event("app_mention")
     def handle_app_mention(event: Dict[str, Any], say: Any) -> None:
         """Handle app mention events.
@@ -192,10 +124,14 @@ def setup_event_handlers(app: App) -> None:
             event: Slack event data
             say: Function for sending messages
         """
+        # スレッド内のメッセージは message イベントで処理するためスキップ
+        if event.get("thread_ts"):
+            return
+
         mention = event["text"]
         channel = event["channel"]
         user = event["user"]
-        thread_ts = event.get("thread_ts", event.get("ts"))
+        thread_ts = event["ts"]  # 新しいスレッドを作成（ts は必ず存在する）
 
         logger.info(
             f"Received mention: {mention}, channel: {channel}, user: {user}, thread: {thread_ts}"
@@ -210,7 +146,11 @@ def setup_event_handlers(app: App) -> None:
         handle_conversation(app, mention, say, user, channel, thread_ts)
 
     @app.event("message")
-    def handle_message_events(body: Dict[str, Any], logger: Any) -> None:
+    def handle_message_events(
+        body: Dict[str, Any],
+        logger: Any,
+        say: Any = None,
+    ) -> None:
         """Handle general message events.
 
         Args:
@@ -218,3 +158,52 @@ def setup_event_handlers(app: App) -> None:
             logger: Logger instance.
         """
         logger.info(body)
+
+        # Only process messages in threads
+        event = body.get("event", {})
+        if event.get("type") != "message" or not event.get("thread_ts"):
+            return
+
+        # Skip if it's a bot message or has subtype
+        if event.get("bot_id") or event.get("subtype"):
+            return
+
+        channel = event.get("channel")
+        thread_ts = event.get("thread_ts")
+
+        if not channel or not thread_ts:
+            return
+
+        try:
+            # Get the parent message
+            result = app.client.conversations_replies(
+                channel=channel, ts=thread_ts, limit=1
+            )
+            if not result or not result.get("messages"):
+                return
+
+            parent_message = result["messages"][0]
+            parent_text = parent_message.get("text", "")
+
+            # Get bot ID
+            bot_id = app.client.auth_test()["user_id"]
+            text = event.get("text", "")
+            user = event.get("user")
+
+            if not text or not user:
+                logger.error("Message text or user ID is missing")
+                return
+
+            # Skip if the message starts with "ai"
+            if re.match(r"^ai\s+", text, re.IGNORECASE):
+                return
+
+            # Process if either:
+            # 1. The message mentions the bot directly
+            # 2. The parent message mentions the bot (thread context)
+            if f"<@{bot_id}>" in text or f"<@{bot_id}>" in parent_text:
+                if say:  # Only process if say function is available
+                    handle_conversation(app, text, say, user, channel, thread_ts)
+
+        except Exception as e:
+            logger.error(f"Error processing thread message: {str(e)}")
