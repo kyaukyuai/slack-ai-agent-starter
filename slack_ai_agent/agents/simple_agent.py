@@ -8,9 +8,10 @@ from langgraph.graph import END
 from langgraph.graph import START
 from langgraph.graph import MessagesState
 from langgraph.graph import StateGraph
+from langgraph.prebuilt import ToolNode
 
+from slack_ai_agent.agents.tools import create_search_tool
 from slack_ai_agent.agents.utils.models import call_model
-from slack_ai_agent.agents.utils.models import tool_node
 
 
 # Define the config
@@ -31,7 +32,7 @@ workflow = StateGraph(MessagesState, config_schema=GraphConfig)
 
 # Define the two nodes we will cycle between
 workflow.add_node("agent", call_model)
-workflow.add_node("action", tool_node)
+workflow.add_node("action", ToolNode(tools=[create_search_tool]))
 
 workflow.add_edge(START, "agent")
 

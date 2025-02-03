@@ -6,6 +6,7 @@ This module provides utility functions for Slack message formatting and LangGrap
 import logging
 import re
 import time
+from datetime import datetime
 from typing import Any
 from typing import Dict
 from typing import List
@@ -107,20 +108,26 @@ def build_conversation_history(
 
             cleaned_text = re.sub(BOT_MENTION_PATTERN, "", message_text).strip()
             if cleaned_text:
+                # Convert Unix timestamp to human readable format
+                timestamp = float(msg.get("ts", "0"))
+                formatted_time = datetime.fromtimestamp(timestamp).strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                )
+
                 if msg.get("bot_id"):
                     messages.append(
                         {
                             "role": "assistant",
-                            "content": cleaned_text,
+                            "content": f"[{formatted_time}] {cleaned_text}",
                         }
                     )
                 else:
-                    # Add user_id to the content for human messages
+                    # Add user_id and timestamp to the content for human messages
                     user_id = msg.get("user", "")
                     messages.append(
                         {
                             "role": "human",
-                            "content": f"[user:{user_id}] {cleaned_text}",
+                            "content": f"[user:{user_id}][{formatted_time}] {cleaned_text}",
                         }
                     )
 
@@ -189,8 +196,8 @@ def process_langgraph_stream(
         input={"messages": messages},
         stream_mode="events",
         config={
-            "configurable": {"user_id": "langgraph-studio-user"}
-        },  # TODO: change to user_id
+            "configurable": {"user_id": user},
+        },
     ):
         if chunk.data.get("event") == "on_chat_model_stream":
             content = chunk.data.get("data", {}).get("chunk", {}).get("content", [])
