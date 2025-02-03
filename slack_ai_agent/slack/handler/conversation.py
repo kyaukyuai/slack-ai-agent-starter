@@ -16,7 +16,10 @@ logger = logging.getLogger(__name__)
 QUESTION_TEMPLATE = """
     Based on the given conversation history, please provide an answer in Markdown format.
     Please output only the answer to the question, without stating that you will respond in Markdown format.
-    If the question is in English, respond in English. If the question is in Japanese, respond in Japanese......
+    If the question is in English, respond in English. If the question is in Japanese, respond in Japanese.
+    Do not output any timestamp or datetime information in your response.
+    Keep responses clean without any date/time prefixes or suffixes.
+    Do not repeat similar content.
 
     Question:
     {mention}
