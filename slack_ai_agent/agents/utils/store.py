@@ -21,8 +21,9 @@ def load_memories(
     Returns:
         Dict: Updated state with loaded memories
     """
-    user_id = config.get("configurable", {}).get("user_id", "langgraph-studio-user")
-    namespace = ("memories", user_id)
+    # TODO: uncomment this when we seta user_id
+    # user_id = config.get("configurable", {}).get("user_id", "langgraph-studio-user")
+    namespace = ("memories", "langgraph-studio-user")
     memories = store.search(
         namespace, query=str(state["messages"][-1].content), limit=100
     )
