@@ -2948,7 +2948,21 @@ idna = ">=2.0"
 multidict = ">=4.0"
 propcache = ">=0.2.0"
 
+[[package]]
+name = "youtube-search"
+version = "2.1.2"
+description = "Perform YouTube video searches without the API"
+optional = false
+python-versions = "*"
+files = [
+    {file = "youtube-search-2.1.2.tar.gz", hash = "sha256:5749a6d8076fda65557c91367f0fab0936290ecdea457c831c9f3f05918a3aa2"},
+    {file = "youtube_search-2.1.2-py3-none-any.whl", hash = "sha256:f9cfaaf7c59806777eb29d3b8acee96b50e80f73a0621c2bb220d4e5beb09e4f"},
+]
+
+[package.dependencies]
+requests = "*"
+
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<4.0"
-content-hash = "9b30845087e158f9ce7e8bf83bdb1a5a7a4c72d122073b8329e8c16e567fe343"
+content-hash = "384150f517d0979fc1208c030328e955ef56c41965145c933324a73cc9924e4c"
