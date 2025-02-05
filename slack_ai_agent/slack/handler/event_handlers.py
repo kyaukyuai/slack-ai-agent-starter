@@ -175,15 +175,10 @@ def setup_event_handlers(app: App) -> None:
             return
 
         try:
-            # Get the parent message
-            result = app.client.conversations_replies(
-                channel=channel, ts=thread_ts, limit=1
-            )
+            # Get all messages in the thread
+            result = app.client.conversations_replies(channel=channel, ts=thread_ts)
             if not result or not result.get("messages"):
                 return
-
-            parent_message = result["messages"][0]
-            parent_text = parent_message.get("text", "")
 
             # Get bot ID
             bot_id = app.client.auth_test()["user_id"]
@@ -198,10 +193,17 @@ def setup_event_handlers(app: App) -> None:
             if re.match(r"^ai\s+", text, re.IGNORECASE):
                 return
 
+            # Check if bot was mentioned in any previous message in the thread
+            bot_mentioned = False
+            for message in result["messages"]:
+                if f"<@{bot_id}>" in message.get("text", ""):
+                    bot_mentioned = True
+                    break
+
             # Process if either:
             # 1. The message mentions the bot directly
-            # 2. The parent message mentions the bot (thread context)
-            if f"<@{bot_id}>" in text or f"<@{bot_id}>" in parent_text:
+            # 2. The bot was mentioned in any previous message in the thread
+            if f"<@{bot_id}>" in text or bot_mentioned:
                 if say:  # Only process if say function is available
                     handle_conversation(app, text, say, user, channel, thread_ts)
 
