@@ -68,19 +68,19 @@ def extract_text_from_blocks(blocks: List[Dict[str, Any]]) -> str:
     Returns:
         str: Extracted text
     """
-    texts = []
+    texts = set()
     for block in blocks:
         if block.get("type") == "rich_text":
             for element in block.get("elements", []):
                 for rich_text in element.get("elements", []):
                     if text := rich_text.get("text", ""):
-                        texts.append(text)
+                        texts.add(text)
         elif "text" in block:
             if isinstance(block["text"], str):
-                texts.append(block["text"])
+                texts.add(block["text"])
             elif isinstance(block["text"], dict) and "text" in block["text"]:
-                texts.append(block["text"]["text"])
-    return " ".join(texts)
+                texts.add(block["text"]["text"])
+    return " ".join(sorted(texts))
 
 
 def build_conversation_history(
@@ -99,16 +99,13 @@ def build_conversation_history(
     messages = []
     if thread_messages and "messages" in thread_messages:
         for msg in thread_messages["messages"]:
-            message_text = msg.get("text", "")
-
             if "blocks" in msg:
-                blocks_text = extract_text_from_blocks(msg["blocks"])
-                if blocks_text:
-                    message_text = f"{message_text} {blocks_text}".strip()
+                message_text = extract_text_from_blocks(msg["blocks"])
+            else:
+                message_text = msg.get("text", "")
 
             cleaned_text = re.sub(BOT_MENTION_PATTERN, "", message_text).strip()
             if cleaned_text:
-                # Convert Unix timestamp to human readable format
                 timestamp = float(msg.get("ts", "0"))
                 formatted_time = datetime.fromtimestamp(timestamp).strftime(
                     "%Y-%m-%d %H:%M:%S"
@@ -118,16 +115,15 @@ def build_conversation_history(
                     messages.append(
                         {
                             "role": "assistant",
-                            "content": f"[{formatted_time}] {cleaned_text}",
+                            "content": f"[{formatted_time}] Assistant: {cleaned_text}",
                         }
                     )
                 else:
-                    # Add user_id and timestamp to the content for human messages
                     user_id = msg.get("user", "")
                     messages.append(
                         {
                             "role": "human",
-                            "content": f"[user:{user_id}][{formatted_time}] {cleaned_text}",
+                            "content": f"[{formatted_time}] User {user_id}: {cleaned_text}",
                         }
                     )
 
