@@ -10,7 +10,7 @@ from langgraph.graph import MessagesState
 from langgraph.graph import StateGraph
 from langgraph.prebuilt import ToolNode
 
-from slack_ai_agent.agents.tools import create_search_tool
+from slack_ai_agent.agents.tools import create_tools
 from slack_ai_agent.agents.utils.models import call_model
 
 
@@ -32,7 +32,7 @@ workflow = StateGraph(MessagesState, config_schema=GraphConfig)
 
 # Define the two nodes we will cycle between
 workflow.add_node("agent", call_model)
-workflow.add_node("action", ToolNode(tools=[create_search_tool]))
+workflow.add_node("action", ToolNode(tools=create_tools()))
 
 workflow.add_edge(START, "agent")
 
@@ -78,7 +78,7 @@ def run_agent(agent: Any, text: str) -> List[BaseMessage]:
     Returns:
         List[BaseMessage]: List of messages including the agent's response.
     """
-    config = {"model_name": "anthropic"}  # Default to anthropic model
+    config = {"model_name": "openai"}  # Use OpenAI model for vision support
     result = agent.invoke(
         {"messages": [{"role": "user", "content": text}], "config": config}
     )

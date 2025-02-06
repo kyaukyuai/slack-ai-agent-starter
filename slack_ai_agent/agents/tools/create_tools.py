@@ -8,6 +8,7 @@ from .python import create_python_repl_tool
 from .research import research
 from .slack import create_slack_tools
 from .summarize import summarize
+from .vision import create_vision_tool
 from .youtube import create_youtube_tool
 
 
@@ -55,5 +56,9 @@ def create_tools() -> List:
     # Add GitHub tools
     if github_tools := create_github_tools():
         tools.extend(github_tools)
+
+    # Add vision tool
+    if vision_tool := create_vision_tool():
+        tools.append(vision_tool)
 
     return tools
