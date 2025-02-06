@@ -3,6 +3,7 @@ This module implements a Slack bot using the Slack Bolt framework.
 It handles basic message events, interactive button clicks, and AI agent integration.
 """
 
+import logging
 import os
 import sys
 from logging import getLogger
@@ -16,6 +17,12 @@ from slack_ai_agent.slack.handler import setup_action_handlers
 from slack_ai_agent.slack.handler import setup_event_handlers
 from slack_ai_agent.slack.handler import setup_message_handlers
 
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout), logging.FileHandler("slack_bot.log")],
+)
 
 logger = getLogger(__name__)
 
