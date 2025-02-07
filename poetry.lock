@@ -1140,19 +1140,19 @@ tenacity = ">=8.1.0,<8.4.0 || >8.4.0,<10"
 
 [[package]]
 name = "langchain-anthropic"
-version = "0.2.4"
+version = "0.3.6"
 description = "An integration package connecting AnthropicMessages and LangChain"
 optional = false
 python-versions = "<4.0,>=3.9"
 files = [
-    {file = "langchain_anthropic-0.2.4-py3-none-any.whl", hash = "sha256:bcb6c2d0df4a67aff52816621079d6e743b260911caccf313a72b33b7edece6f"},
-    {file = "langchain_anthropic-0.2.4.tar.gz", hash = "sha256:0382d4c7b5236839b703f7b72b3e06de4bb5be99104b193f719adbe34c49562b"},
+    {file = "langchain_anthropic-0.3.6-py3-none-any.whl", hash = "sha256:fdd07ba53be38cfe40a22265f1c48fe71a71c0c2b0884702f3de0ff647cf4c89"},
+    {file = "langchain_anthropic-0.3.6.tar.gz", hash = "sha256:1cfca1938d26c40c4f3e28a2dcb28860681a606f71b53cd54c340e95b9d366b0"},
 ]
 
 [package.dependencies]
-anthropic = ">=0.30.0,<1"
+anthropic = ">=0.45.0,<1"
 defusedxml = ">=0.7.1,<0.8.0"
-langchain-core = ">=0.3.15,<0.4.0"
+langchain-core = ">=0.3.33,<0.4.0"
 pydantic = ">=2.7.4,<3.0.0"
 
 [[package]]
@@ -3191,4 +3191,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<4.0"
-content-hash = "b0e03564fd3bd8e93da9a834369734d2bdcca35f28101848cc0c45df3017b7a4"
+content-hash = "ab60f08666ad30ffe09bc03a09d0599de2a740dd5992824dee3d4930007ad8de"
