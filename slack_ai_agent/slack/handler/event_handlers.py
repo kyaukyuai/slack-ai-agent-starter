@@ -168,6 +168,10 @@ def setup_event_handlers(app: App) -> None:
         if event.get("subtype"):
             return
 
+        # Skip if it's a message from any bot
+        if event.get("bot_id"):
+            return
+
         channel = event.get("channel")
         thread_ts = event.get("thread_ts")
 
@@ -193,25 +197,23 @@ def setup_event_handlers(app: App) -> None:
             if re.match(r"^ai\s+", text, re.IGNORECASE):
                 return
 
-            # Skip if it's a bot message that's not in a thread
-            if event.get("bot_id") and not event.get("thread_ts"):
-                return
-
-            # Check if this is a thread started by the bot
+            # Check if this is a thread started by our bot
             parent_message = result["messages"][0]
-            is_bot_thread = parent_message.get("bot_id") is not None
+            is_bot_thread = parent_message.get("bot_id") == bot_id
 
-            # Check if bot was mentioned in any previous message in the thread
+            # Check if our bot was mentioned in any previous message in the thread
             bot_mentioned = False
             for message in result["messages"]:
-                if f"<@{bot_id}>" in message.get("text", ""):
+                if not message.get("bot_id") and f"<@{bot_id}>" in message.get(
+                    "text", ""
+                ):
                     bot_mentioned = True
                     break
 
             # Process if any of:
-            # 1. The message mentions the bot directly
-            # 2. The thread was started by the bot
-            # 3. The bot was mentioned in any previous message in the thread
+            # 1. The message mentions our bot directly
+            # 2. The thread was started by our bot
+            # 3. Our bot was mentioned in any previous message in the thread (by a human)
             if f"<@{bot_id}>" in text or is_bot_thread or bot_mentioned:
                 if say:  # Only process if say function is available
                     handle_conversation(app, text, say, user, channel, thread_ts)
