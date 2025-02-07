@@ -164,8 +164,8 @@ def setup_event_handlers(app: App) -> None:
         if event.get("type") != "message" or not event.get("thread_ts"):
             return
 
-        # Skip if it's a bot message or has subtype
-        if event.get("bot_id") or event.get("subtype"):
+        # Skip if it has subtype
+        if event.get("subtype"):
             return
 
         channel = event.get("channel")
@@ -193,6 +193,14 @@ def setup_event_handlers(app: App) -> None:
             if re.match(r"^ai\s+", text, re.IGNORECASE):
                 return
 
+            # Skip if it's a bot message that's not in a thread
+            if event.get("bot_id") and not event.get("thread_ts"):
+                return
+
+            # Check if this is a thread started by the bot
+            parent_message = result["messages"][0]
+            is_bot_thread = parent_message.get("bot_id") is not None
+
             # Check if bot was mentioned in any previous message in the thread
             bot_mentioned = False
             for message in result["messages"]:
@@ -200,10 +208,11 @@ def setup_event_handlers(app: App) -> None:
                     bot_mentioned = True
                     break
 
-            # Process if either:
+            # Process if any of:
             # 1. The message mentions the bot directly
-            # 2. The bot was mentioned in any previous message in the thread
-            if f"<@{bot_id}>" in text or bot_mentioned:
+            # 2. The thread was started by the bot
+            # 3. The bot was mentioned in any previous message in the thread
+            if f"<@{bot_id}>" in text or is_bot_thread or bot_mentioned:
                 if say:  # Only process if say function is available
                     handle_conversation(app, text, say, user, channel, thread_ts)
 
