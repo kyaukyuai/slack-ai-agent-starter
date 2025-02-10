@@ -1,10 +1,10 @@
 {
-    "dependencies": ["."],
-    "graphs": {
-      "agent": "./slack_ai_agent/agents/simple_long_term_memory_agent.py:graph"
-    },
-    "env": ".env",
-    "auth": {
-      "path": "slack_ai_agent/agents/security/auth.py:auth"
-    }
+  "dependencies": ["."],
+  "graphs": {
+    "agent": "./slack_ai_agent/agents/multi_agents/supervisor.py:graph"
+  },
+  "env": ".env",
+  "auth": {
+    "path": "slack_ai_agent/agents/security/auth.py:auth"
+  }
 }
