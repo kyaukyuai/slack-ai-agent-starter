@@ -11,7 +11,6 @@ from typing_extensions import TypedDict
 
 from slack_ai_agent.agents.tools.python import create_python_repl_tool
 from slack_ai_agent.agents.tools.search import create_search_tool
-from slack_ai_agent.agents.utils import load_memories
 from slack_ai_agent.agents.utils.models import model
 
 
@@ -44,7 +43,6 @@ def supervisor_node(state: State) -> Command[Literal["researcher", "coder", "__e
         {"role": "system", "content": system_prompt},
     ] + state["messages"]
     response = model.with_structured_output(Router).invoke(messages)
-    print("response: ", response)
     goto = response["next"]
     if goto == "FINISH":
         goto = END
@@ -93,6 +91,5 @@ builder.add_node("supervisor", supervisor_node)
 builder.add_node("researcher", research_node)
 builder.add_node("coder", code_node)
 builder.add_edge(START, "supervisor")
-builder.add_edge("supervisor", "researcher")
-builder.add_edge("supervisor", "coder")
+
 graph = builder.compile()
