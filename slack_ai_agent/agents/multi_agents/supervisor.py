@@ -42,8 +42,8 @@ def supervisor_node(state: State) -> Command[Literal["researcher", "coder", "__e
     messages = [
         {"role": "system", "content": system_prompt},
     ] + state["messages"]
-    response = model.with_structured_output(Router).invoke(messages)
-    goto = response["next"]
+    response = model.with_structured_output(Router).invoke(messages)  # type: ignore
+    goto = response["next"]  # type: ignore
     if goto == "FINISH":
         goto = END
 
@@ -52,7 +52,7 @@ def supervisor_node(state: State) -> Command[Literal["researcher", "coder", "__e
 
 research_agent = create_react_agent(
     model,
-    tools=[create_search_tool()],
+    tools=[create_search_tool()],  # type: ignore
     prompt="You are a researcher. DO NOT do any math.",
 )
 
@@ -70,7 +70,7 @@ def research_node(state: State) -> Command[Literal["supervisor"]]:
 
 
 # NOTE: THIS PERFORMS ARBITRARY CODE EXECUTION, WHICH CAN BE UNSAFE WHEN NOT SANDBOXED
-code_agent = create_react_agent(model, tools=[create_python_repl_tool()])
+code_agent = create_react_agent(model, tools=[create_python_repl_tool()])  # type: ignore
 
 
 def code_node(state: State) -> Command[Literal["supervisor"]]:
