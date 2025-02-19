@@ -6,6 +6,7 @@ from .memory import upsert_memory
 from .python import create_python_repl_tool
 from .research import research
 from .slack import create_slack_tools
+from .summarize import summarize
 from .youtube import create_youtube_tool
 
 
@@ -23,6 +24,15 @@ def create_tools() -> List:
             func=research,
             name="research",
             description="Useful for when you need to research a topic, gather information from multiple sources, and provide a comprehensive summary. Input should be a research topic or question.",
+        )
+    )
+
+    # Add summarize tool
+    tools.append(
+        Tool.from_function(
+            func=summarize,
+            name="summarize",
+            description="Useful for when you need to summarize the content of a specific URL. Input should be a URL that you want to analyze and summarize.",
         )
     )
 

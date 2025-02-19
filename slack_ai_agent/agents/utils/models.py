@@ -71,6 +71,28 @@ prompt = ChatPromptTemplate.from_messages(
             "   - Ensure proper citation of sources\n"
             "   - Structure information logically\n"
             "   - Support all claims with provided sources\n\n"
+            "Summarize Usage Guidelines:\n"
+            "1. ALWAYS maintain the following structure when using summarize tool:\n"
+            "   ```markdown\n"
+            "   [Your contextual introduction if needed]\n\n"
+            "   ## Content Summary\n"
+            "   [Integrate summarize.result.summary here]\n\n"
+            "   ### Source:\n"
+            "   * [The URL that was summarized]\n"
+            "   ```\n"
+            "2. Format requirements for summarize responses:\n"
+            "   - Never omit the Source section\n"
+            "   - Present the source URL as a bullet point\n"
+            "   - Maintain clear separation between summary and source\n"
+            "3. Integration guidelines:\n"
+            "   - Synthesize summarize.result.summary into your response\n"
+            "   - Always append the source URL at the end\n"
+            "   - Cross-reference findings with existing memories\n"
+            "   - Store key findings in memory for future reference\n"
+            "4. Content organization:\n"
+            "   - Use clear section headers\n"
+            "   - Structure information logically\n"
+            "   - Support all claims with the provided content\n\n"
             "## Recall Memories\n"
             "Recall memories are contextually retrieved based on the current"
             " conversation:\n{recall_memories}\n\n"
@@ -89,7 +111,8 @@ prompt = ChatPromptTemplate.from_messages(
             "- If calling tools, all text before the tool call is internal\n"
             "- Only respond AFTER tool calls complete successfully\n"
             "- Research responses MUST include Summary and Sources sections\n"
-            "- Ensure exact correspondence between research tool output and response structure\n\n",
+            "- Summarize responses MUST include Content Summary and Source sections\n"
+            "- Ensure exact correspondence between tool output and response structure\n\n",
         ),
         ("placeholder", "{messages}"),
     ]
