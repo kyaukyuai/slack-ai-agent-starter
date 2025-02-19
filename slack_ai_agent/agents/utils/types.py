@@ -9,7 +9,7 @@ from typing import TypedDict
 from langchain_core.messages import BaseMessage
 
 
-class MessagesState(TypedDict):
+class MessagesState(TypedDict, total=False):
     """State containing messages and their context."""
 
     messages: List[BaseMessage]

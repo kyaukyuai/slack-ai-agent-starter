@@ -25,7 +25,7 @@ def load_memories(
     # user_id = config.get("configurable", {}).get("user_id", "langgraph-studio-user")
     namespace = ("memories", "langgraph-studio-user")
     memories = store.search(
-        namespace, query=str(state["messages"][-1].content), limit=100
+        namespace, query=str(state["messages"][-1].content), limit=50
     )
     recall_memories = [
         f"{memory.value.get('content', '')} - Context: {memory.value.get('context', '')} "
