@@ -186,43 +186,77 @@ def process_langgraph_stream(
     message = None
     formatted_text = ""
 
-    for chunk in client.runs.stream(
-        thread_id,
-        assistant_id="agent",
-        input={"messages": messages},
-        stream_mode="events",
-        config={
-            "configurable": {"user_id": user},
-        },
-    ):
-        if chunk.data.get("event") == "on_chat_model_stream":
-            content = chunk.data.get("data", {}).get("chunk", {}).get("content", [])
-            if content and len(content) > 0:
-                text = content[0].get("text", "")
-                if text:
-                    final_answer += text
-                    formatted_text = format_for_slack_display(final_answer)
+    try:
+        stream = client.runs.stream(
+            thread_id,
+            assistant_id="agent",
+            input={"messages": messages},
+            stream_mode="events",
+            config={
+                "configurable": {"user_id": user},
+            },
+        )
 
-                    try:
-                        if not message:
-                            message = say(
-                                text=f"<@{user}>\n{formatted_text}",
-                                thread_ts=thread_ts,
-                            )
-                        elif (
-                            app
-                            and (time.time() - last_update) > MESSAGE_UPDATE_INTERVAL
-                        ):
-                            last_update = time.time()
-                            last_post_text = formatted_text
-                            update_slack_message(app, message, user, formatted_text)
-                    except Exception as e:
-                        logger.error(f"Error updating message: {e}")
+        for chunk in stream:
+            # チャンクが文字列の場合はスキップ
+            if isinstance(chunk, str):
+                continue
 
-    if message and app and last_post_text != formatted_text:
-        update_slack_message(app, message, user, formatted_text)
+            # データ構造の確認とバリデーション
+            if not hasattr(chunk, "data"):
+                continue
 
-    return final_answer
+            data = chunk.data
+            if not isinstance(data, dict):
+                continue
+
+            if data.get("event") != "on_chat_model_stream":
+                continue
+
+            chunk_data = data.get("data", {})
+            if not isinstance(chunk_data, dict):
+                continue
+
+            chunk_content = chunk_data.get("chunk", {}).get("content", [])
+            if not chunk_content:
+                continue
+
+            content_item = chunk_content[0]
+            if not isinstance(content_item, dict):
+                continue
+
+            text = content_item.get("text", "")
+            if not isinstance(text, str) or not text.strip():
+                continue
+
+            # 文字化けや不正な文字列をフィルタリング
+            text = "".join(char for char in text if ord(char) < 0x10000)
+
+            final_answer += text
+            formatted_text = format_for_slack_display(final_answer)
+
+            try:
+                if not message:
+                    message = say(
+                        text=f"<@{user}>\n{formatted_text}",
+                        thread_ts=thread_ts,
+                    )
+                elif app and (time.time() - last_update) > MESSAGE_UPDATE_INTERVAL:
+                    last_update = time.time()
+                    last_post_text = formatted_text
+                    update_slack_message(app, message, user, formatted_text)
+            except Exception as e:
+                logger.error(f"Error updating message: {e}")
+                continue
+
+        if message and app and last_post_text != formatted_text:
+            update_slack_message(app, message, user, formatted_text)
+
+        return final_answer
+
+    except Exception as e:
+        logger.error(f"Error in process_langgraph_stream: {e}")
+        return None
 
 
 def execute_langgraph(
@@ -262,9 +296,15 @@ def execute_langgraph(
         thread = client.threads.create()
         logger.info(f"Created thread: {thread}")
 
+        # スレッドIDが文字列として返される場合の対応
+        thread_id = thread if isinstance(thread, str) else thread.get("thread_id")
+        if not thread_id:
+            logger.error("Failed to get thread_id")
+            return None
+
         messages = build_conversation_history(thread_messages, question)
         return process_langgraph_stream(
-            client, thread["thread_id"], messages, say, user, thread_ts, app
+            client, thread_id, messages, say, user, thread_ts, app
         )
 
     except Exception as e:

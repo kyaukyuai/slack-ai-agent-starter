@@ -1,3 +1,5 @@
+from typing import Any
+from typing import List
 from typing import Literal
 from typing import TypedDict
 
@@ -17,6 +19,32 @@ class GraphConfig(TypedDict):
     model_name: Literal["anthropic", "openai"]
 
 
+def get_tool_calls(msg: Any) -> List[dict]:
+    """Extract all tool calls from a message.
+
+    Args:
+        msg: The message to extract tool calls from.
+
+    Returns:
+        List[dict]: List of tool calls.
+    """
+    tool_calls = []
+
+    # Check content for tool_use type items
+    if isinstance(msg.content, list):
+        for item in msg.content:
+            if isinstance(item, dict) and item.get("type") == "tool_use":
+                tool_calls.append(item)
+
+    # Check additional_kwargs for tool_calls
+    if hasattr(msg, "additional_kwargs"):
+        calls = msg.additional_kwargs.get("tool_calls", [])
+        if isinstance(calls, list):
+            tool_calls.extend(calls)
+
+    return tool_calls
+
+
 def route_tools(state: State):
     """Determine whether to use tools or end the conversation based on the last message.
 
@@ -28,9 +56,14 @@ def route_tools(state: State):
     """
     msg = state["messages"][-1]
     print("msg: ", msg)
-    if msg.tool_calls:  # type: ignore
+
+    # Get all tool calls first
+    tool_calls = get_tool_calls(msg)
+    if tool_calls:
+        print("Routing to tools")
         return "tools"
 
+    print("Routing to END")
     return END
 
 
