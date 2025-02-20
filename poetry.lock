@@ -184,6 +184,25 @@ test = ["anyio[trio]", "coverage[toml] (>=7)", "exceptiongroup (>=1.2.0)", "hypo
 trio = ["trio (>=0.26.1)"]
 
 [[package]]
+name = "arcadepy"
+version = "1.1.1"
+description = "The official Python library for the Arcade API"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "arcadepy-1.1.1-py3-none-any.whl", hash = "sha256:744f2a6d93f8b0edb226b806dfad8f4ef5aec777ba422c267203491a02a52271"},
+    {file = "arcadepy-1.1.1.tar.gz", hash = "sha256:4fd6db88f941af7be69b1b923c9f01725583d52af54099beeb13d53435e81062"},
+]
+
+[package.dependencies]
+anyio = ">=3.5.0,<5"
+distro = ">=1.7.0,<2"
+httpx = ">=0.23.0,<1"
+pydantic = ">=1.9.0,<3"
+sniffio = "*"
+typing-extensions = ">=4.10,<5"
+
+[[package]]
 name = "attrs"
 version = "25.1.0"
 description = "Classes Without Boilerplate"
@@ -1172,6 +1191,21 @@ anthropic = ">=0.45.0,<1"
 defusedxml = ">=0.7.1,<0.8.0"
 langchain-core = ">=0.3.33,<0.4.0"
 pydantic = ">=2.7.4,<3.0.0"
+
+[[package]]
+name = "langchain-arcade"
+version = "1.0.0"
+description = "An integration package connecting Arcade and LangChain/LangGraph"
+optional = false
+python-versions = "<3.13,>=3.10"
+files = [
+    {file = "langchain_arcade-1.0.0-py3-none-any.whl", hash = "sha256:9a36c1d89d9544553c698dca0859521be02fb1e25bee05a16f7448407c295d4d"},
+    {file = "langchain_arcade-1.0.0.tar.gz", hash = "sha256:1bb8983b447189eb014544a80095fa483e661b718d3f08d0a2ab9dcb32e049c5"},
+]
+
+[package.dependencies]
+arcadepy = ">=1.0.0,<2.0.0"
+langgraph = ">=0.2.67,<0.3.0"
 
 [[package]]
 name = "langchain-community"
@@ -3297,5 +3331,5 @@ cffi = ["cffi (>=1.11)"]
 
 [metadata]
 lock-version = "2.0"
-python-versions = ">=3.11,<4.0"
-content-hash = "777249b6565aca351cd973dfb46ad4625cc5b2cd953efa1faca0801e9061885e"
+python-versions = ">=3.11,<3.13"
+content-hash = "f29bb5c77a9988f4a2d64804f5396f6bf5150a37019d77579009a48501a56b1f"

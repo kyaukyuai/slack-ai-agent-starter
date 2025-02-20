@@ -2,6 +2,7 @@ from typing import List
 
 from langchain.tools import Tool
 
+from .github import create_github_tools  # type: ignore
 from .memory import upsert_memory
 from .python import create_python_repl_tool
 from .research import research
@@ -50,5 +51,9 @@ def create_tools() -> List:
     # Add python REPL tool
     if python_tool := create_python_repl_tool():
         tools.append(python_tool)
+
+    # Add GitHub tools
+    if github_tools := create_github_tools():
+        tools.extend(github_tools)
 
     return tools
