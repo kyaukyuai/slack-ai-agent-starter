@@ -1,8 +1,12 @@
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Literal
 from typing import TypedDict
 
+from langchain.schema import HumanMessage
+from langchain.schema import SystemMessage
+from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END
 from langgraph.graph import START
 from langgraph.graph import StateGraph
@@ -12,6 +16,38 @@ from slack_ai_agent.agents.tools import create_tools
 from slack_ai_agent.agents.utils import State
 from slack_ai_agent.agents.utils import agent
 from slack_ai_agent.agents.utils import load_memories
+from slack_ai_agent.agents.utils.models import model
+
+
+def generate_loading_query(state: State, config: RunnableConfig) -> Dict[str, str]:
+    """Generate a query for loading memories based on the current conversation.
+
+    Args:
+        state (State): The current state of the conversation
+        config (RunnableConfig): Runtime configuration
+
+    Returns:
+        Dict[str, str]: Dictionary containing the generated query
+    """
+    messages = [msg for msg in state["messages"] if msg.content]
+    if not messages:
+        return {"loading_query": ""}
+
+    result = model.invoke(
+        [
+            SystemMessage(
+                content="You are a helpful assistant tasked with generating a search query to find relevant memories. Based on the conversation, create a concise query that will help retrieve the most relevant information."
+            ),
+            HumanMessage(
+                content=f"Generate a search query based on this conversation:\n{messages[-1].content}"
+            ),
+        ]
+    )
+
+    if isinstance(result.content, str):
+        return {"loading_query": result.content.strip()}
+
+    return {"loading_query": ""}
 
 
 # Define the config
@@ -69,12 +105,14 @@ def route_tools(state: State):
 
 # Create the graph and add nodes
 builder = StateGraph(State)
+builder.add_node("generate_loading_query", generate_loading_query)  # type: ignore
 builder.add_node("load_memories", load_memories)  # type: ignore
 builder.add_node("agent", agent)  # type: ignore
 builder.add_node("tools", ToolNode(tools=create_tools()))  # type: ignore
 
 # Add edges to the graph
-builder.add_edge(START, "load_memories")
+builder.add_edge(START, "generate_loading_query")
+builder.add_edge("generate_loading_query", "load_memories")
 builder.add_edge("load_memories", "agent")
 builder.add_conditional_edges("agent", route_tools, ["tools", END])
 builder.add_edge("tools", "agent")
