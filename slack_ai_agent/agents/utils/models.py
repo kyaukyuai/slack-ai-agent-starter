@@ -2,6 +2,7 @@
 
 from typing import Dict
 from typing import List
+from typing import Optional
 
 from langchain.prompts import ChatPromptTemplate
 from langchain_anthropic import ChatAnthropic
@@ -137,6 +138,7 @@ class State(MessagesState):
     """State class for managing conversation state with memory capabilities."""
 
     recall_memories: List[str]
+    loading_query: Optional[str]
 
 
 def agent(state: State, config: RunnableConfig, *, store: BaseStore) -> State:
