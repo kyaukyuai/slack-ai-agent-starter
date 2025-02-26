@@ -1,5 +1,12 @@
+import asyncio
+
 from langsmith import traceable
+from tavily import AsyncTavilyClient
 from tavily import TavilyClient
+
+
+tavily_client = TavilyClient()
+tavily_async_client = AsyncTavilyClient()
 
 
 def deduplicate_and_format_sources(
@@ -81,19 +88,74 @@ def tavily_search(query, include_raw_content=True, max_results=3):
     """Search the web using the Tavily API.
 
     Args:
-        query (str): The search query to execute
+        query (str or list): The search query to execute, can be a single query string or list of query strings
         include_raw_content (bool): Whether to include the raw_content from Tavily in the formatted string
         max_results (int): Maximum number of results to return
 
     Returns:
-        dict: Search response containing:
+        dict or list: Search response containing or list of search responses:
             - results (list): List of search result dictionaries, each containing:
                 - title (str): Title of the search result
                 - url (str): URL of the search result
                 - content (str): Snippet/summary of the content
-                - raw_content (str): Full content of the page if available"""
+                - raw_content (str): Full content of the page if available
+    """
+    # 単一のクエリか複数のクエリかをチェック
+    if isinstance(query, list):
+        # 複数のクエリがある場合は、それぞれについて検索を実行
+        results = []
+        for single_query in query:
+            result = tavily_client.search(
+                single_query,
+                max_results=max_results,
+                include_raw_content=include_raw_content,
+            )
+            results.append(result)
+        return results
+    else:
+        # 単一のクエリの場合、そのまま検索を実行
+        return tavily_client.search(
+            query, max_results=max_results, include_raw_content=include_raw_content
+        )
 
-    tavily_client = TavilyClient()
-    return tavily_client.search(
-        query, max_results=max_results, include_raw_content=include_raw_content
-    )
+
+@traceable
+async def tavily_search_async(search_queries):
+    """
+    Performs concurrent web searches using the Tavily API.
+
+    Args:
+        search_queries (List[SearchQuery]): List of search queries to process
+
+    Returns:
+            List[dict]: List of search responses from Tavily API, one per query. Each response has format:
+                {
+                    'query': str, # The original search query
+                    'follow_up_questions': None,
+                    'answer': None,
+                    'images': list,
+                    'results': [                     # List of search results
+                        {
+                            'title': str,            # Title of the webpage
+                            'url': str,              # URL of the result
+                            'content': str,          # Summary/snippet of content
+                            'score': float,          # Relevance score
+                            'raw_content': str|None  # Full page content if available
+                        },
+                        ...
+                    ]
+                }
+    """
+
+    search_tasks = []
+    for query in search_queries:
+        search_tasks.append(
+            tavily_async_client.search(
+                query, max_results=5, include_raw_content=True, topic="general"
+            )
+        )
+
+    # Execute all searches concurrently
+    search_docs = await asyncio.gather(*search_tasks)
+
+    return search_docs

@@ -2,10 +2,10 @@ from typing import List
 
 from langchain.tools import Tool
 
+from .deep_research import deep_research
 from .github import create_github_tools  # type: ignore
 from .memory import upsert_memory
 from .python import create_python_repl_tool
-from .research import research
 from .slack import create_slack_tools
 from .summarize import summarize
 from .youtube import create_youtube_tool
@@ -20,11 +20,20 @@ def create_tools() -> List:
     tools: List = []
 
     # Add research tool
+    # tools.append(
+    #     Tool.from_function(
+    #         func=research,
+    #         name="research",
+    #         description="Useful for when you need to research a topic, gather information from multiple sources, and provide a comprehensive summary. Input should be a research topic or question.",
+    #     )
+    # )
+
+    # Add deep research tool
     tools.append(
         Tool.from_function(
-            func=research,
-            name="research",
-            description="Useful for when you need to research a topic, gather information from multiple sources, and provide a comprehensive summary. Input should be a research topic or question.",
+            func=deep_research,
+            name="deep_research",
+            description="Useful for when you need to perform in-depth, structured research on a complex topic. This tool creates a comprehensive report with multiple sections, performs targeted searches for each section, and compiles a detailed final report. Input should be a research topic or question that requires extensive analysis.",
         )
     )
 
