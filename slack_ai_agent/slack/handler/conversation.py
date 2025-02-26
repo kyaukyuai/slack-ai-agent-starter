@@ -8,6 +8,7 @@ from typing import Optional
 from slack_bolt import App
 from slack_sdk.web import SlackResponse
 
+from slack_ai_agent.slack.utils import build_conversation_history
 from slack_ai_agent.slack.utils import execute_langgraph
 
 
@@ -20,6 +21,9 @@ QUESTION_TEMPLATE = """
     Do not output any timestamp or datetime information in your response.
     Keep responses clean without any date/time prefixes or suffixes.
     Do not repeat similar content.
+
+    Conversation History:
+    {thread_history}
 
     Question:
     {mention}
@@ -66,15 +70,29 @@ def handle_conversation(
         channel: Channel ID
         thread_ts: Thread timestamp
     """
-    thread_history = get_thread_history(app, channel, thread_ts)
-    question = QUESTION_TEMPLATE.format(mention=mention)
+    thread_history_data = get_thread_history(app, channel, thread_ts)
+
+    # Convert thread history to formatted string for the prompt
+    history_messages = build_conversation_history(thread_history_data)
+    formatted_history = ""
+
+    # Format thread history messages into a string
+    for message in history_messages:
+        if message["role"] == "human" or message["role"] == "user":
+            formatted_history += f"User: {message['content']}\n"
+        elif message["role"] == "assistant":
+            formatted_history += f"Assistant: {message['content']}\n"
+
+    # Format the question template with both mention and thread history
+    question = QUESTION_TEMPLATE.format(
+        mention=mention, thread_history=formatted_history
+    )
 
     response = execute_langgraph(
         question=question,
         say=say,
         user=user,
         thread_ts=thread_ts,
-        thread_messages=thread_history,
         app=app,
         langgraph_url=os.environ.get("LANGGRAPH_URL"),
         langgraph_token=os.environ.get("LANGGRAPH_TOKEN"),
