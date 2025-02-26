@@ -11,9 +11,9 @@ from typing import Dict
 from typing import List
 from typing import Optional
 
-from langchain.embeddings import OpenAIEmbeddings
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import tool
+from langchain_openai import OpenAIEmbeddings
 from langgraph.prebuilt import InjectedStore
 
 

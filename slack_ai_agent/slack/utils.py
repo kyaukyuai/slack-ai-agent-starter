@@ -16,6 +16,7 @@ from typing import Union
 from dotenv import load_dotenv
 from langgraph_sdk import get_sync_client
 from slack_bolt import App
+from slack_sdk.errors import SlackApiError
 from slack_sdk.web import SlackResponse
 
 
@@ -27,6 +28,87 @@ load_dotenv()
 # Constants
 MESSAGE_UPDATE_INTERVAL = 0.3  # seconds
 BOT_MENTION_PATTERN = r"<@[A-Z0-9]+>\s*"
+SLACK_MSG_CHAR_LIMIT = 1500  # Slackメッセージの文字数制限（約4000文字）
+
+
+def split_message(message: str, limit: int = SLACK_MSG_CHAR_LIMIT) -> list[str]:
+    """長いメッセージを文字数制限内の複数のメッセージに分割します。
+
+    引数:
+        message: 元の長いメッセージ
+        limit: メッセージごとの文字数制限
+
+    戻り値:
+        list[str]: メッセージチャンクのリスト
+    """
+    if len(message) <= limit:
+        return [message]
+
+    # 適切な分割ポイントを見つける（できれば段落区切りで）
+    chunks = []
+    while message:
+        if len(message) <= limit:
+            chunks.append(message)
+            break
+
+        # 段落/改行で分割を試みる
+        split_point = message[:limit].rfind("\n\n")
+        if split_point == -1:
+            # 段落区切りがない場合は通常の改行を試す
+            split_point = message[:limit].rfind("\n")
+
+        if split_point == -1 or split_point < limit // 2:
+            # 適切な改行が見つからないか、テキストの早い段階にある場合は、
+            # スペースでの分割にフォールバック
+            split_point = message[:limit].rfind(" ")
+
+        if split_point == -1:
+            # スペースが見つからない場合は、制限でそのまま分割
+            split_point = limit
+
+        chunks.append(message[:split_point])
+        message = message[split_point:].lstrip()
+
+    return chunks
+
+
+def post_message_chunks(
+    say: Any,
+    message: str,
+    thread_ts: str,
+    user: Optional[str] = None,
+    limit: int = SLACK_MSG_CHAR_LIMIT,
+) -> None:
+    """メッセージを投稿し、必要に応じて分割します。
+
+    引数:
+        say: メッセージを送信するための関数
+        message: 投稿するメッセージ
+        thread_ts: スレッドのタイムスタンプ
+        user: ユーザーID (オプション)
+        limit: メッセージごとの文字数制限
+    """
+    # 進捗表示の追加に必要なスペースを確保するために、実際の制限を少し減らす
+    # "(1/10) " のような表示に最大10文字程度使用する可能性を考慮
+    progress_indicator_space = 10
+    effective_limit = limit - progress_indicator_space
+
+    chunks = split_message(message, effective_limit)
+    total_chunks = len(chunks)
+
+    for i, chunk in enumerate(chunks):
+        try:
+            # 進捗表示を追加
+            progress_indicator = f"({i + 1}/{total_chunks}) "
+
+            if i == 0 and user:  # 最初のチャンクにのみメンションを追加
+                text = f"<@{user}>\n{progress_indicator}{chunk}"
+            else:
+                text = f"{progress_indicator}{chunk}"
+
+            say(text=text, thread_ts=thread_ts)
+        except Exception as e:
+            logger.error(f"メッセージチャンクの投稿中にエラーが発生しました: {e}")
 
 
 def format_for_slack_display(text: str) -> str:
@@ -148,12 +230,39 @@ def update_slack_message(
         formatted_text: Formatted text
     """
     try:
-        app.client.chat_update(
-            channel=message["channel"],
-            ts=message["ts"],
-            text=f"<@{user}>\n{formatted_text}",
-        )
+        # ユーザーメンションと改行分の長さを計算
+        mention_prefix = f"<@{user}>\n"
+        mention_length = len(mention_prefix)
+
+        # 実際の利用可能な文字数 (メンション分を差し引く)
+        available_length = SLACK_MSG_CHAR_LIMIT - mention_length - 10  # 10は余裕分
+
+        # メッセージが文字数制限を超えているか確認
+        if len(formatted_text) > available_length:
+            # 文字数制限内で短くする
+            truncated_text = formatted_text[:available_length] + "...(続く)"
+            app.client.chat_update(
+                channel=message["channel"],
+                ts=message["ts"],
+                text=f"{mention_prefix}{truncated_text}",
+            )
+        else:
+            app.client.chat_update(
+                channel=message["channel"],
+                ts=message["ts"],
+                text=f"{mention_prefix}{formatted_text}",
+            )
+    except SlackApiError as slack_e:
+        # Extract detailed information from Slack API errors
+        response = slack_e.response
+        # Direct access to data as a dict
+        error_data = getattr(response, "data", {})
+        # Use the request URL from the response
+        url = getattr(response, "api_url", "unknown")
+        error_message = f"Error updating message: The request to the Slack API failed. (url: {url}) Error: {error_data.get('error', 'unknown')}, Details: {error_data}"
+        logger.error(error_message)
     except Exception as e:
+        # Handle generic exceptions
         logger.error(f"Error updating message: {e}")
 
 
@@ -185,6 +294,7 @@ def process_langgraph_stream(
     last_post_text = ""
     message = None
     formatted_text = ""
+    current_message_too_long = False
 
     try:
         stream = client.runs.stream(
@@ -235,6 +345,12 @@ def process_langgraph_stream(
             final_answer += text
             formatted_text = format_for_slack_display(final_answer)
 
+            # 文字数を確認
+            if len(formatted_text) > SLACK_MSG_CHAR_LIMIT:
+                # 文字数制限を超えそうな場合は更新を停止し、最終的に分割して投稿する
+                current_message_too_long = True
+                continue
+
             try:
                 if not message:
                     message = say(
@@ -245,11 +361,68 @@ def process_langgraph_stream(
                     last_update = time.time()
                     last_post_text = formatted_text
                     update_slack_message(app, message, user, formatted_text)
+            except SlackApiError as slack_e:
+                # Extract detailed information from Slack API errors
+                response = slack_e.response
+                # Direct access to data as a dict
+                error_data = getattr(response, "data", {})
+                # Use the request URL from the response
+                url = getattr(response, "api_url", "unknown")
+                error_message = f"Error updating message: The request to the Slack API failed. (url: {url}) Error: {error_data.get('error', 'unknown')}, Details: {error_data}"
+                logger.error(error_message)
+                continue
             except Exception as e:
+                # Handle generic exceptions
                 logger.error(f"Error updating message: {e}")
                 continue
 
-        if message and app and last_post_text != formatted_text:
+        # ストリーミング終了後の処理
+        if current_message_too_long:
+            # メッセージが長すぎる場合のみ分割して投稿する
+            if message and app:
+                # 既存のメッセージを短いバージョンに更新
+                truncated_text = "長文のため分割して投稿します..."
+                try:
+                    app.client.chat_update(
+                        channel=message["channel"],
+                        ts=message["ts"],
+                        text=f"<@{user}>\n{truncated_text}",
+                    )
+                except SlackApiError as slack_e:
+                    # Extract detailed information from Slack API errors
+                    response = slack_e.response
+                    # Direct access to data as a dict
+                    error_data = getattr(response, "data", {})
+                    # Use the request URL from the response
+                    url = getattr(response, "api_url", "unknown")
+                    error_message = f"Error updating message to placeholder: The request to the Slack API failed. (url: {url}) Error: {error_data.get('error', 'unknown')}, Details: {error_data}"
+                    logger.error(error_message)
+                except Exception as e:
+                    # Handle generic exceptions
+                    logger.error(f"Error updating message to placeholder: {e}")
+
+                # 完全な回答を複数のメッセージに分割して投稿
+                if (
+                    thread_ts
+                ):  # Ensure thread_ts is not None before passing to post_message_chunks
+                    post_message_chunks(
+                        lambda text, thread_ts=thread_ts: say(
+                            text=text, thread_ts=thread_ts
+                        ),
+                        formatted_text,
+                        thread_ts,
+                        user,
+                    )
+                else:
+                    # If thread_ts is None, post without a thread reference
+                    post_message_chunks(
+                        lambda text: say(text=text),
+                        formatted_text,
+                        "",  # Empty string as a fallback for thread_ts
+                        user,
+                    )
+        elif message and app and last_post_text != formatted_text:
+            # メッセージが長すぎない場合は、最後の更新だけを行う
             update_slack_message(app, message, user, formatted_text)
 
         return final_answer
