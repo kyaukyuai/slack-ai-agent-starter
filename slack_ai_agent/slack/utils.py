@@ -437,7 +437,6 @@ def execute_langgraph(
     say: Any,
     user: str,
     thread_ts: Optional[str] = None,
-    thread_messages: Optional[Union[Dict[str, Any], SlackResponse]] = None,
     app: Optional[App] = None,
     langgraph_url: Optional[str] = None,
     langgraph_token: Optional[str] = None,
@@ -445,11 +444,10 @@ def execute_langgraph(
     """Execute LangGraph and generate a response.
 
     Args:
-        question: Question text
+        question: Question text (includes embedded thread history)
         say: Function for sending messages
         user: User ID
         thread_ts: Thread timestamp
-        thread_messages: Thread message history
         app: Slack Bolt application instance
         langgraph_url: LangGraph API URL
         langgraph_token: LangGraph API token
@@ -475,7 +473,9 @@ def execute_langgraph(
             logger.error("Failed to get thread_id")
             return None
 
-        messages = build_conversation_history(thread_messages, question)
+        # Create a simple message structure with just the question
+        # The thread history is now embedded in the question
+        messages = [{"role": "user", "content": question}]
         return process_langgraph_stream(
             client, thread_id, messages, say, user, thread_ts, app
         )
