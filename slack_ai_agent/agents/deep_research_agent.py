@@ -36,6 +36,7 @@ from slack_ai_agent.agents.prompts.deep_research_section_grader_instructions imp
 from slack_ai_agent.agents.prompts.deep_research_section_writer_instructions import (
     section_writer_instructions,
 )
+from slack_ai_agent.agents.tools.perplexity_search import perplexity_search
 from slack_ai_agent.agents.tools.tavily_search import deduplicate_and_format_sources
 from slack_ai_agent.agents.tools.tavily_search import tavily_search_async
 
@@ -197,11 +198,11 @@ async def generate_report_plan(state: ReportState, config: RunnableConfig):
         source_str = deduplicate_and_format_sources(
             search_results, max_tokens_per_source=1000, include_raw_content=False
         )
-    # elif search_api == "perplexity":
-    #     search_results = perplexity_search(query_list)
-    #     source_str = deduplicate_and_format_sources(
-    #         search_results, max_tokens_per_source=1000, include_raw_content=False
-    #     )
+    elif search_api == "perplexity":
+        search_results = perplexity_search(query_list)
+        source_str = deduplicate_and_format_sources(
+            search_results, max_tokens_per_source=1000, include_raw_content=False
+        )
     else:
         raise ValueError(f"Unsupported search API: {configurable.search_api}")
 

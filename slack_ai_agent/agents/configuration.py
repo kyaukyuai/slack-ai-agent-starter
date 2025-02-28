@@ -53,8 +53,8 @@ class Configuration:
     writer_provider: WriterProvider = (
         WriterProvider.ANTHROPIC
     )  # Defaults to Anthropic as provider
-    writer_model: str = "claude-3-5-sonnet-latest"  # Defaults to Anthropic as provider
-    search_api: SearchAPI = SearchAPI.TAVILY  # Default to TAVILY
+    writer_model: str = "claude-3-7-sonnet-latest"  # Defaults to Anthropic as provider
+    search_api: SearchAPI = SearchAPI.PERPLEXITY  # Default to TAVILY
 
     @classmethod
     def from_runnable_config(

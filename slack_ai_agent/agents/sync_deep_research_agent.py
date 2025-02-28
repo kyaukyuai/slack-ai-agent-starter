@@ -36,6 +36,7 @@ from slack_ai_agent.agents.prompts.deep_research_section_grader_instructions imp
 from slack_ai_agent.agents.prompts.deep_research_section_writer_instructions import (
     section_writer_instructions,
 )
+from slack_ai_agent.agents.tools.perplexity_search import perplexity_search
 from slack_ai_agent.agents.tools.tavily_search import deduplicate_and_format_sources
 from slack_ai_agent.agents.tools.tavily_search import (
     tavily_search,  # 非同期版ではなく同期版を使用
@@ -195,15 +196,15 @@ def generate_report_plan(state: ReportState, config: RunnableConfig):
 
     # Search the web - 同期バージョンを使用
     if search_api == "tavily":
-        search_results = tavily_search(query_list)  # 非同期から同期に変更
+        search_results = tavily_search(query=query_list)
         source_str = deduplicate_and_format_sources(
             search_results, max_tokens_per_source=1000, include_raw_content=False
         )
-    # elif search_api == "perplexity":
-    #     search_results = perplexity_search(query_list)
-    #     source_str = deduplicate_and_format_sources(
-    #         search_results, max_tokens_per_source=1000, include_raw_content=False
-    #     )
+    elif search_api == "perplexity":
+        search_results = perplexity_search(search_queries=query_list)
+        source_str = deduplicate_and_format_sources(
+            search_results, max_tokens_per_source=1000, include_raw_content=False
+        )
     else:
         raise ValueError(f"Unsupported search API: {configurable.search_api}")
 
@@ -375,15 +376,15 @@ def search_web(state: SectionState, config: RunnableConfig):
 
     # Search the web - 同期バージョン
     if search_api == "tavily":
-        search_results = tavily_search(query_list)  # 非同期から同期に変更
+        search_results = tavily_search(query=query_list)  # 非同期から同期に変更
         source_str = deduplicate_and_format_sources(
             search_results, max_tokens_per_source=5000, include_raw_content=True
         )
-    # elif search_api == "perplexity":
-    #     search_results = perplexity_search(query_list)
-    #     source_str = deduplicate_and_format_sources(
-    #         search_results, max_tokens_per_source=5000, include_raw_content=False
-    #     )
+    elif search_api == "perplexity":
+        search_results = perplexity_search(search_queries=query_list)
+        source_str = deduplicate_and_format_sources(
+            search_results, max_tokens_per_source=5000, include_raw_content=False
+        )
     else:
         raise ValueError(f"Unsupported search API: {configurable.search_api}")
 
@@ -431,7 +432,11 @@ def write_section(
     )
 
     # Write content to the section object
-    section.content = section_content.content
+    # Ensure we're getting a string from section_content
+    if hasattr(section_content, "content"):
+        section.content = str(section_content.content)
+    else:
+        section.content = str(section_content)
 
     # Grade prompt
     section_grader_instructions_formatted = section_grader_instructions.format(
@@ -449,16 +454,17 @@ def write_section(
         ]
     )
 
-    if (
-        feedback.grade == "pass"
-        or state["search_iterations"] >= configurable.max_search_depth
-    ):
+    # Safely access feedback attributes
+    grade = getattr(feedback, "grade", None)
+    follow_up_queries = getattr(feedback, "follow_up_queries", [])
+
+    if grade == "pass" or state["search_iterations"] >= configurable.max_search_depth:
         # Publish the section to completed sections
         return Command(update={"completed_sections": [section]}, goto=END)
     else:
         # Update the existing section with new content and update search queries
         return Command(
-            update={"search_queries": feedback.follow_up_queries, "section": section},
+            update={"search_queries": follow_up_queries, "section": section},
             goto="search_web",
         )
 
@@ -498,7 +504,11 @@ def write_final_sections(state: SectionState, config: RunnableConfig):
     )
 
     # Write content to section
-    section.content = section_content.content
+    # Ensure we're getting a string from section_content
+    if hasattr(section_content, "content"):
+        section.content = str(section_content.content)
+    else:
+        section.content = str(section_content)
 
     # Write the updated section to completed sections
     return {"completed_sections": [section]}
