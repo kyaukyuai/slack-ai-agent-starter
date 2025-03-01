@@ -8,6 +8,7 @@ from .memory import upsert_memory
 from .python import create_python_repl_tool
 from .slack import create_slack_tools
 from .summarize import summarize
+from .twitter import create_twitter_tools  # type: ignore
 from .youtube import create_youtube_tool
 
 
@@ -64,5 +65,9 @@ def create_tools() -> List:
     # Add GitHub tools
     if github_tools := create_github_tools():
         tools.extend(github_tools)
+
+    # Add Twitter tools
+    if twitter_tools := create_twitter_tools():
+        tools.extend(twitter_tools)
 
     return tools
