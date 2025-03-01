@@ -64,10 +64,34 @@ def generate_query(state: SummaryState, config: RunnableConfig):
     )
 
     if isinstance(result.content, str):
-        query = json.loads(result.content)
-        return {"search_query": query["query"]}
+        try:
+            # Try to parse the entire content as JSON
+            query = json.loads(result.content)
+            if "query" in query:
+                return {"search_query": query["query"]}
 
-    raise ValueError("Expected string content from LLM")
+            # If no query key, look for JSON-like structure in the text
+            json_start = result.content.find("{")
+            json_end = result.content.rfind("}") + 1
+
+            if json_start >= 0 and json_end > json_start:
+                json_str = result.content[json_start:json_end]
+                try:
+                    query = json.loads(json_str)
+                    if "query" in query:
+                        return {"search_query": query["query"]}
+                except json.JSONDecodeError:
+                    pass  # Continue to fallback
+        except json.JSONDecodeError as e:
+            print(f"JSON parsing error in generate_query: {e}")
+            print(f"Content was: {result.content}")
+        except Exception as e:
+            print(f"Unexpected error in generate_query: {e}")
+            print(f"Content was: {result.content}")
+
+    # Fallback: use the research topic as the query
+    print(f"Using fallback query for topic: {state.research_topic}")
+    return {"search_query": state.research_topic}
 
 
 def web_research(state: SummaryState, config: RunnableConfig):
@@ -137,26 +161,38 @@ def reflect_on_summary(state: SummaryState, config: RunnableConfig):
         ]
     )
 
+    if not isinstance(result.content, str):
+        print("LLM returned non-string content in reflect_on_summary")
+        return {"search_query": f"Tell me more about {state.research_topic}"}
+
     try:
-        if isinstance(result.content, str):
-            # JSON部分を探す（最初の{から最後の}までを抽出）
+        # First try to parse the entire content as JSON
+        try:
+            follow_up_query = json.loads(result.content)
+            query = follow_up_query.get("follow_up_query")
+            if query:
+                return {"search_query": query}
+        except json.JSONDecodeError:
+            # If that fails, try to extract JSON from the content
             json_start = result.content.find("{")
             json_end = result.content.rfind("}") + 1
 
             if json_start >= 0 and json_end > json_start:
                 json_str = result.content[json_start:json_end]
-                follow_up_query = json.loads(json_str)
-                query = follow_up_query.get("follow_up_query")
-                if query:
-                    return {"search_query": query}
-    except json.JSONDecodeError as e:
-        print(f"JSON parsing error: {e}")
-        print(f"Content was: {result.content}")
+                try:
+                    follow_up_query = json.loads(json_str)
+                    query = follow_up_query.get("follow_up_query")
+                    if query:
+                        return {"search_query": query}
+                except json.JSONDecodeError as e:
+                    print(f"JSON parsing error in extracted content: {e}")
+                    print(f"Extracted content was: {json_str}")
     except Exception as e:
-        print(f"Unexpected error: {e}")
+        print(f"Unexpected error in reflect_on_summary: {e}")
         print(f"Content was: {result.content}")
 
     # Fallback to a placeholder query
+    print(f"Using fallback query for topic: {state.research_topic}")
     return {"search_query": f"Tell me more about {state.research_topic}"}
 
 
