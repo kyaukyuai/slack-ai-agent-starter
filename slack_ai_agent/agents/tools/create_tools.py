@@ -4,6 +4,7 @@ from langchain.tools import Tool
 
 from .deep_research import deep_research
 from .github import create_github_tools  # type: ignore
+from .google import create_google_tools  # type: ignore
 from .memory import upsert_memory
 from .python import create_python_repl_tool
 from .slack import create_slack_tools
@@ -69,5 +70,9 @@ def create_tools() -> List:
     # Add Twitter tools
     if twitter_tools := create_twitter_tools():
         tools.extend(twitter_tools)
+
+    # Add Google tools
+    if google_tools := create_google_tools():
+        tools.extend(google_tools)
 
     return tools
