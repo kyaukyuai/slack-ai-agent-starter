@@ -196,36 +196,36 @@ def create_twitter_tools() -> Optional[List[Union[Tool, StructuredTool]]]:
                 return f"Error getting user timeline: {str(e)}"
 
         # Create custom tool wrappers
-        custom_tools = [
-            Tool.from_function(
-                func=lookup_tweet_by_id,
-                name="twitter_lookup_tweet",
-                description="Look up a tweet by its ID. First-time users will be prompted to authorize. Input should be a dictionary with 'tweet_id' and optional 'user_id' keys.",
-            ),
-            Tool.from_function(
-                func=post_tweet,
-                name="twitter_post_tweet",
-                description="Post a new tweet. First-time users will be prompted to authorize. Input should be a dictionary with 'text' and optional 'user_id' keys.",
-            ),
-            Tool.from_function(
-                func=get_user_profile,
-                name="twitter_get_user_profile",
-                description="Get a Twitter user's profile information. First-time users will be prompted to authorize. Input should be a dictionary with 'username' and optional 'user_id' keys.",
-            ),
-            Tool.from_function(
-                func=search_tweets,
-                name="twitter_search_tweets",
-                description="Search for tweets based on a query. First-time users will be prompted to authorize. Input should be a dictionary with 'query', optional 'max_results', and optional 'user_id' keys.",
-            ),
-            Tool.from_function(
-                func=get_user_timeline,
-                name="twitter_get_user_timeline",
-                description="Get a user's timeline (recent tweets). First-time users will be prompted to authorize. Input should be a dictionary with 'username', optional 'max_results', and optional 'user_id' keys.",
-            ),
+        custom_tools: List[Union[Tool, StructuredTool]] = [
+            # Tool.from_function(
+            #     func=lookup_tweet_by_id,
+            #     name="twitter_lookup_tweet",
+            #     description="Look up a tweet by its ID. First-time users will be prompted to authorize. Input should be a dictionary with 'tweet_id' and optional 'user_id' keys.",
+            # ),
+            # Tool.from_function(
+            #     func=post_tweet,
+            #     name="twitter_post_tweet",
+            #     description="Post a new tweet. First-time users will be prompted to authorize. Input should be a dictionary with 'text' and optional 'user_id' keys.",
+            # ),
+            # Tool.from_function(
+            #     func=get_user_profile,
+            #     name="twitter_get_user_profile",
+            #     description="Get a Twitter user's profile information. First-time users will be prompted to authorize. Input should be a dictionary with 'username' and optional 'user_id' keys.",
+            # ),
+            # Tool.from_function(
+            #     func=search_tweets,
+            #     name="twitter_search_tweets",
+            #     description="Search for tweets based on a query. First-time users will be prompted to authorize. Input should be a dictionary with 'query', optional 'max_results', and optional 'user_id' keys.",
+            # ),
+            # Tool.from_function(
+            #     func=get_user_timeline,
+            #     name="twitter_get_user_timeline",
+            #     description="Get a user's timeline (recent tweets). First-time users will be prompted to authorize. Input should be a dictionary with 'username', optional 'max_results', and optional 'user_id' keys.",
+            # ),
         ]
 
         # Combine Arcade's Twitter tools with our custom wrappers
-        return tools + custom_tools
+        return tools + custom_tools  # type: ignore
 
     except Exception as e:
         print(f"Failed to create Twitter tools: {e}")

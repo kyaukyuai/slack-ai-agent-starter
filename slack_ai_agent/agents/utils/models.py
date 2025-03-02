@@ -1,15 +1,28 @@
 """Model related functionality for the agent implementation."""
 
+from datetime import datetime
 from typing import Dict
 from typing import List
 from typing import Optional
 
+import pytz  # type: ignore
 from langchain.prompts import ChatPromptTemplate
 from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import BaseMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import MessagesState
 from langgraph.store.base import BaseStore
+
+
+def get_current_jst_time() -> str:
+    """Get the current time in JST format.
+
+    Returns:
+        str: Current time in JST format (YYYY/MM/DD HH:MM:SS)
+    """
+    jst = pytz.timezone("Asia/Tokyo")
+    current_time = datetime.now(jst)
+    return current_time.strftime("%Y/%m/%d %H:%M:%S")
 
 
 # Initialize base model
@@ -20,6 +33,7 @@ prompt = ChatPromptTemplate.from_messages(
     [
         (
             "system",
+            f"Current time (JST): {get_current_jst_time()}\n\n"
             "You are a helpful assistant with advanced long-term memory"
             " capabilities and research abilities. Powered by a stateless LLM, you must rely on"
             " external memory to store information between conversations and"
