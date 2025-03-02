@@ -50,7 +50,7 @@ def create_google_tools() -> Optional[List[Union[Tool, StructuredTool]]]:
                         if not tool_manager.is_authorized(auth_response.id):
                             raise ValueError("Authorization failed")
 
-        def create_calendar_event(args: Dict[str, Any]) -> str:
+        def create_calendar_event(args: Union[Dict[str, Any], str]) -> str:
             """Create an event in Google Calendar.
 
             First-time users will be prompted to authorize through Google OAuth.
@@ -64,10 +64,27 @@ def create_google_tools() -> Optional[List[Union[Tool, StructuredTool]]]:
                     - location: (Optional) Event location
                     - attendees: (Optional) List of email addresses for attendees
                     - user_id: (Optional) User identifier for authentication
+                  Or a string that will be parsed as JSON.
 
             Returns:
                 str: Response message.
             """
+            # Handle string input (convert to dict if possible)
+            if isinstance(args, str):
+                if args.strip():
+                    try:
+                        import json
+
+                        args = json.loads(args)
+                    except json.JSONDecodeError:
+                        return "Error: Input must be a valid JSON string or dictionary"
+                else:
+                    return "Error: Required parameters missing (summary, start_datetime, end_datetime)"
+
+            # Ensure args is a dictionary
+            if not isinstance(args, dict):
+                return "Error: Input must be a dictionary or valid JSON string"
+
             user_id = args.get("user_id", os.getenv("ARCADE_USER_ID"))
             tool_name = "Google.CreateEvent"
 
@@ -98,7 +115,7 @@ def create_google_tools() -> Optional[List[Union[Tool, StructuredTool]]]:
             except Exception as e:
                 return f"Error creating calendar event: {str(e)}"
 
-        def list_calendar_events(args: Dict[str, Any]) -> str:
+        def list_calendar_events(args: Union[Dict[str, Any], str]) -> str:
             """List events from Google Calendar.
 
             First-time users will be prompted to authorize through Google OAuth.
@@ -109,10 +126,28 @@ def create_google_tools() -> Optional[List[Union[Tool, StructuredTool]]]:
                     - time_max: (Optional) End time in ISO format (YYYY-MM-DDTHH:MM:SS)
                     - max_results: (Optional) Maximum number of events to return
                     - user_id: (Optional) User identifier for authentication
+                  Or a string that will be parsed as JSON or treated as empty input.
 
             Returns:
                 str: Response message containing calendar events.
             """
+            # Handle string input (convert to dict if possible)
+            if isinstance(args, str):
+                if args.strip():
+                    try:
+                        import json
+
+                        args = json.loads(args)
+                    except json.JSONDecodeError:
+                        # If string can't be parsed as JSON, use empty dict
+                        args = {}
+                else:
+                    args = {}
+
+            # Ensure args is a dictionary
+            if not isinstance(args, dict):
+                args = {}
+
             user_id = args.get("user_id", os.getenv("ARCADE_USER_ID"))
             tool_name = "Google.ListEvents"
 
@@ -138,21 +173,21 @@ def create_google_tools() -> Optional[List[Union[Tool, StructuredTool]]]:
                 return f"Error listing calendar events: {str(e)}"
 
         # Create custom tool wrappers
-        custom_tools = [
-            Tool.from_function(
-                func=create_calendar_event,
-                name="google_create_calendar_event",
-                description="Create an event in Google Calendar. First-time users will be prompted to authorize. Input should be a dictionary with 'summary', 'start_datetime', 'end_datetime', optional 'description', optional 'location', optional 'attendees', and optional 'user_id' keys.",
-            ),
-            Tool.from_function(
-                func=list_calendar_events,
-                name="google_list_calendar_events",
-                description="List events from Google Calendar. First-time users will be prompted to authorize. Input should be a dictionary with optional 'time_min', optional 'time_max', optional 'max_results', and optional 'user_id' keys.",
-            ),
+        custom_tools: List[Union[Tool, StructuredTool]] = [
+            # Tool.from_function(
+            #     func=create_calendar_event,
+            #     name="google_create_calendar_event",
+            #     description="Create an event in Google Calendar. First-time users will be prompted to authorize. Input should be a dictionary with 'summary', 'start_datetime', 'end_datetime', optional 'description', optional 'location', optional 'attendees', and optional 'user_id' keys.",
+            # ),
+            # Tool.from_function(
+            #     func=list_calendar_events,
+            #     name="google_list_calendar_events",
+            #     description="List events from Google Calendar. First-time users will be prompted to authorize. Input should be a dictionary with optional 'time_min', optional 'time_max', optional 'max_results', and optional 'user_id' keys.",
+            # ),
         ]
 
         # Combine Arcade's Google tools with our custom wrappers
-        return tools + custom_tools
+        return tools + custom_tools  # type: ignore
 
     except Exception as e:
         print(f"Failed to create Google tools: {e}")

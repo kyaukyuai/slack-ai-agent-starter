@@ -129,6 +129,9 @@ def format_for_slack_display(text: str) -> str:
     # Process bold text (**text** -> *text*)
     text = re.sub(r"\*\*(.+?)\*\*", r"*\1*", text)
 
+    # Process Markdown links ([text](url) -> <url|text>)
+    text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r"<\2|\1>", text)
+
     # Process code blocks
     text = re.sub(r"```(\w+)\n", "```\n", text)
 
