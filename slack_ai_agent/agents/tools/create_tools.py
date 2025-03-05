@@ -6,6 +6,15 @@ from .deep_research import deep_research
 from .github import create_github_tools  # type: ignore
 from .google import create_google_tools  # type: ignore
 from .memory import upsert_memory
+
+
+try:
+    from .powerpoint_generation import PPTX_AVAILABLE
+    from .powerpoint_generation import create_powerpoint_tool
+except ImportError:
+    PPTX_AVAILABLE = False
+    create_powerpoint_tool = None  # type: ignore
+from .powerpoint_requirements import create_requirements_definition_tool
 from .python import create_python_repl_tool
 from .slack import create_slack_tools
 from .summarize import summarize
@@ -47,6 +56,13 @@ def create_tools() -> List:
             description="Useful for when you need to summarize the content of a specific URL. Input should be a URL that you want to analyze and summarize.",
         )
     )
+
+    # Add PowerPoint requirements definition tool
+    tools.append(create_requirements_definition_tool)
+
+    # Add PowerPoint generation tool if python-pptx is available
+    if PPTX_AVAILABLE:
+        tools.append(create_powerpoint_tool)
 
     # Add memory tool
     tools.append(upsert_memory)
