@@ -5,7 +5,8 @@
       "deep_research_agent": "./slack_ai_agent/agents/deep_research_agent.py:graph",
       "sync_deep_research_agent": "./slack_ai_agent/agents/sync_deep_research_agent.py:graph",
       "research_agent": "./slack_ai_agent/agents/research_agent.py:graph",
-      "summarize_agent": "./slack_ai_agent/agents/summarize_agent.py:graph"
+      "summarize_agent": "./slack_ai_agent/agents/summarize_agent.py:graph",
+      "url_to_twitter_agent": "./slack_ai_agent/agents/url_to_twitter_agent.py:graph"
     },
     "env": ".env",
     "auth": {
