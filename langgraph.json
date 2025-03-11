@@ -8,7 +8,8 @@
       "summarize_agent": "./slack_ai_agent/agents/summarize_agent.py:graph",
       "powerpoint_agent": "./slack_ai_agent/agents/powerpoint_agent.py:graph",
       "powerpoint_requirements_agent": "./slack_ai_agent/agents/powerpoint_requirements_agent.py:graph",
-      "powerpoint_generation_agent": "./slack_ai_agent/agents/powerpoint_generation_agent.py:graph"
+      "powerpoint_generation_agent": "./slack_ai_agent/agents/powerpoint_generation_agent.py:graph",
+      "marp_generation_agent": "./slack_ai_agent/agents/marp_generation_agent.py:graph"
     },
     "env": ".env",
     "auth": {
