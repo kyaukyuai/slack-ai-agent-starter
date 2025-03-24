@@ -16,6 +16,7 @@ from langgraph.graph import END
 from langgraph.graph import START
 from langgraph.graph import StateGraph
 
+from slack_ai_agent.agents.tools.deep_research import deep_research
 from slack_ai_agent.agents.tools.firecrawl_scrape import firecrawl_scrape
 from slack_ai_agent.agents.utils.models import model
 
@@ -30,6 +31,8 @@ class URLToTwitterState(TypedDict, total=False):
         user_id (Optional[str]): Twitter認証用のユーザーID
         scraped_content (str): スクレイピングした内容
         scraped_data (Dict): スクレイピング結果の生データ
+        topic (str): 抽出されたトピック
+        related_knowledge (str): トピックに関連する周辺知識
         tweet_content (str): 投稿内容
         tweet_result (str): 投稿結果
         error (str): エラーメッセージ
@@ -40,6 +43,8 @@ class URLToTwitterState(TypedDict, total=False):
     user_id: Optional[str]
     scraped_content: str
     scraped_data: Dict
+    topic: str
+    related_knowledge: str
     tweet_content: str
     tweet_result: str
     error: str
@@ -140,20 +145,20 @@ def scrape_url(state: Dict[str, Any], config: RunnableConfig) -> Dict[str, Any]:
         return state
 
 
-def create_tweet(state: Dict[str, Any], config: RunnableConfig) -> Dict[str, str]:
-    """スクレイピング結果からTwitter投稿用の内容を作成する。
-    インプレッションやいいねが多くなるツイートを生成する。
+def extract_topic_and_research(
+    state: Dict[str, Any], config: RunnableConfig
+) -> Dict[str, str]:
+    """スクレイピング結果からトピックを抽出し、関連する周辺知識を取得する。
 
     Args:
         state (Dict[str, Any]): 現在の状態
         config (RunnableConfig): ランタイム設定
 
     Returns:
-        Dict[str, str]: 投稿内容を含む辞書
+        Dict[str, str]: トピックと関連知識を含む辞書
     """
-    url = state.get("url", "")
-    scraped_data = state.get("scraped_data", {})
     scraped_content = state.get("scraped_content", "")
+    scraped_data = state.get("scraped_data", {})
 
     if not scraped_content:
         # スクレイピングした内容がない場合はエラーメッセージを追加
@@ -173,18 +178,120 @@ def create_tweet(state: Dict[str, Any], config: RunnableConfig) -> Dict[str, str
         ):
             title = scraped_data["metadata"]["title"]
 
-        # マーケティングレポートを作成
-        marketing_report = f"""
-# マーケティングレポート
+        # トピック抽出のプロンプト
+        result = model.invoke(
+            [
+                SystemMessage(
+                    content="あなたは記事の内容からメインのトピックを抽出するアシスタントです。"
+                ),
+                HumanMessage(
+                    content=f"""
+以下の記事の内容から、メインのトピックを抽出してください。
+トピックは簡潔に、5単語以内で表現してください。
 
-## 記事タイトル
+タイトル: {title}
+
+内容:
+{scraped_content}
+"""
+                ),
+            ]
+        )
+
+        # トピックを抽出
+        topic = result.content.strip() if isinstance(result.content, str) else ""
+
+        # トピックが空の場合はタイトルをトピックとして使用
+        if not topic and title:
+            topic = title
+
+        # トピックが空の場合はデフォルトのトピックを設定
+        if not topic:
+            topic = "最新技術トレンド"
+
+        # deep_researchを実行して関連知識を取得
+        research_result = deep_research(topic=topic)
+
+        # 関連知識を抽出
+        related_knowledge = ""
+        if (
+            isinstance(research_result, dict)
+            and "result" in research_result
+            and isinstance(research_result["result"], dict)
+        ):
+            report = research_result["result"].get("report", "")
+            if report:
+                related_knowledge = report
+            else:
+                # セクション情報から関連知識を構築
+                sections = research_result["result"].get("sections", [])
+                if sections:
+                    related_knowledge = "# 関連する周辺知識\n\n"
+                    for section in sections:
+                        related_knowledge += f"## {section.get('title', '')}\n"
+                        related_knowledge += f"{section.get('summary', '')}\n\n"
+
+        return {
+            "topic": topic,
+            "related_knowledge": related_knowledge,
+        }
+    except Exception as e:
+        # エラーが発生した場合はエラーメッセージを追加
+        state["messages"].append(
+            AIMessage(content=f"トピック抽出と調査中にエラーが発生しました: {str(e)}")
+        )
+        return state
+
+
+def create_tweet(state: Dict[str, Any], config: RunnableConfig) -> Dict[str, str]:
+    """スクレイピング結果からTwitter投稿用の内容を作成する。
+    インプレッションやいいねが多くなるツイートを生成する。
+
+    Args:
+        state (Dict[str, Any]): 現在の状態
+        config (RunnableConfig): ランタイム設定
+
+    Returns:
+        Dict[str, str]: 投稿内容を含む辞書
+    """
+    url = state.get("url", "")
+    scraped_data = state.get("scraped_data", {})
+    scraped_content = state.get("scraped_content", "")
+    topic = state.get("topic", "")
+    related_knowledge = state.get("related_knowledge", "")
+
+    if not scraped_content:
+        # スクレイピングした内容がない場合はエラーメッセージを追加
+        state["messages"].append(
+            AIMessage(content="スクレイピングした内容がありません。")
+        )
+        return state
+
+    try:
+        # 記事のタイトルを抽出
+        title = ""
+        if (
+            isinstance(scraped_data, dict)
+            and "metadata" in scraped_data
+            and isinstance(scraped_data["metadata"], dict)
+            and "title" in scraped_data["metadata"]
+        ):
+            title = scraped_data["metadata"]["title"]
+
+        article = f"""
+# 記事
+
+## タイトル
 {title}
+
+## トピック
+{topic}
 
 ## URL
 {url}
 
 ## 記事の内容
-{scraped_content[:1500] + "..." if len(scraped_content) > 1500 else scraped_content}
+{scraped_content}
 """
 
         # 高いインプレッションとエンゲージメントを獲得した実際のツイート例
@@ -213,7 +320,7 @@ def create_tweet(state: Dict[str, Any], config: RunnableConfig) -> Dict[str, str
 2. 驚きや発見を表現する（「ウォオオオオオオ！！！」「これはガチ」など）
 3. 具体的な数字や成果を強調する（「1分で生成」「8万を超えた」など）
 4. 質問形式を使って読者を巻き込む
-5. カジュアルな口調や関西弁を適切に使用する
+5. カジュアルな口調を適切に使用する
 6. 短く、インパクトのある文章で構成する
 7. 最後にURLを含める
 8. 投稿全体を280文字以内に収める
@@ -233,10 +340,10 @@ def create_tweet(state: Dict[str, Any], config: RunnableConfig) -> Dict[str, str
 
         # 投稿作成のプロンプト
         prompt = f"""あなたはTwitterで高いインプレッションとエンゲージメントを獲得する投稿を作成する、トップクラスのマーケティング担当者です。
-あなたはTwitterの投稿に変換する必要があるコンテンツに関するレポートを提供されています。
-あなたの同僚はすでにこのコンテンツに関する詳細なマーケティングレポートを作成してくれているので、時間をかけて注意深く読んでください。
+あなたはTwitterの投稿に変換する必要があるコンテンツに関する記事と、その記事に関連する周辺知識や業界トレンドの情報を提供されています。
 
-重要：マーケティングレポート内の記事内容に主に焦点を当ててください。記事内容に基づいて、高いエンゲージメントを獲得できる魅力的な投稿を作成してください。
+あなたの同僚はすでにこのコンテンツに関する詳細な記事を作成してくれているので、時間をかけて注意深く読んでください。
+記事内容を主軸としつつ、提供された周辺知識も取り入れて、読者に新たな気づきや深い洞察を与える投稿を作成してください。
 
 以下は、実際に高いインプレッションとエンゲージメントを獲得したTwitterの投稿例です。これらをスタイルの参考にしてください：
 <examples>
@@ -247,7 +354,6 @@ def create_tweet(state: Dict[str, Any], config: RunnableConfig) -> Dict[str, str
 {post_structure_instructions}
 
 これらの特徴を必ず取り入れてください。そして、投稿は感情的で共感を呼び起こすものであればあるほど良いことを忘れないでください。
-
 Twitter投稿を作成する際に厳守すべきルールとガイドラインは以下の通りです：
 <rules>
 {post_content_rules}
@@ -255,22 +361,35 @@ Twitter投稿を作成する際に厳守すべきルールとガイドライン�
 
 最後に、Twitter投稿を書く際には以下のプロセスに従ってください：
 <writing-process>
-ステップ1. まず、マーケティングレポートを非常に注意深く読み、記事内容に焦点を当てます。
-ステップ2. メモを取り、記事内容を注意深く読んだ後の考えを書き留めます。これが最初に書くテキストになります。メモと考えを「<thinking>」タグで囲みます。
-ステップ3. 最後に、記事内容についてのTwitter投稿を書きます。これが最後に書くテキストになります。投稿を「<post>」タグで囲みます。
+ステップ1. まず、記事と周辺知識の情報を非常に注意深く読みます。
+ステップ2. メモを取り、記事内容と周辺知識を組み合わせた考えを書き留めます。これが最初に書くテキストになります。メモと考えを「<thinking>」タグで囲みます。
+ステップ3. 最後に、記事内容をメインとしつつ周辺知識からの洞察も取り入れたTwitter投稿を書きます。これが最後に書くテキストになります。投稿を「<post>」タグで囲みます。
 </writing-process>
 
-これらの例、ルール、およびユーザーから提供されたコンテンツを考慮して、高いエンゲージメントを獲得できる魅力的なTwitter投稿を作成してください。
+これらの例、ルール、およびユーザーから提供された記事内容と周辺知識を考慮して、高いエンゲージメントを獲得できる魅力的なTwitter投稿を作成してください。
 
-こちらがマーケティングレポートです：
-{marketing_report}
+こちらが記事です：
+{article}
+
+こちらが関連する周辺知識・業界トレンドです：
+{related_knowledge}
 """
 
         # LLMを使用して投稿内容を生成
         result = model.invoke(
             [
                 SystemMessage(
-                    content="あなたは高いインプレッションとエンゲージメントを獲得するTwitter投稿を作成する専門家です。与えられたレポートを元に、感情的で共感を呼び起こす魅力的なツイートを作成してください。関西弁や「ほんまそれっす！！」「ウォオオオオオオ！！！」などの感情表現、「これはガチ」などのカジュアルな表現を適切に使い、読者の興味を引く質問や具体的な数字を含めると効果的です。ユーザーが思わず共感して「いいね」したくなるような投稿を心がけてください。"
+                    content="""
+あなたは高いインプレッションとエンゲージメントを獲得するTwitter投稿を作成する専門家です。与えられたレポートを元に、感情的で共感を呼び起こす魅力的なツイートを作成してください。
+
+以下の点を含めてください：
+1. 感情的な表現（「ほんまそれっす！！」「ウォオオオオオオ！！！」）、カジュアルな言葉（「これはガチ」「マジやばい」など）を適切に取り入れ、親近感と共感を生み出す
+2. 読者の興味を引く質問や具体的な数字
+3. レポートから得られる直接的な示唆だけでなく、関連する周辺知識や業界トレンドを含めた考察
+4. なぜこの情報が重要なのか、読者のビジネスや生活にどう影響するかの洞察
+
+ユーザーが思わず共感して「いいね」したくなるような投稿を心がけてください。また、ツイートは280文字以内で作成してください。
+"""
                 ),
                 HumanMessage(content=prompt),
             ]
@@ -469,8 +588,29 @@ def route_after_extract_url(state: Dict[str, Any]) -> Literal["scrape_url", "end
         return "end"
 
 
-def route_after_scrape_url(state: Dict[str, Any]) -> Literal["create_tweet", "end"]:
+def route_after_scrape_url(
+    state: Dict[str, Any],
+) -> Literal["extract_topic_and_research", "end"]:
     """URLのスクレイピング後の遷移先を決定する。
+
+    Args:
+        state (Dict[str, Any]): 現在の状態
+
+    Returns:
+        Literal["extract_topic_and_research", "end"]: 次のステップ
+    """
+    if state.get("error", ""):
+        return "end"
+    elif state.get("scraped_content", ""):
+        return "extract_topic_and_research"
+    else:
+        return "end"
+
+
+def route_after_extract_topic_and_research(
+    state: Dict[str, Any],
+) -> Literal["create_tweet", "end"]:
+    """トピック抽出と調査後の遷移先を決定する。
 
     Args:
         state (Dict[str, Any]): 現在の状態
@@ -480,7 +620,7 @@ def route_after_scrape_url(state: Dict[str, Any]) -> Literal["create_tweet", "en
     """
     if state.get("error", ""):
         return "end"
-    elif state.get("scraped_content", ""):
+    elif state.get("topic", "") and state.get("related_knowledge", ""):
         return "create_tweet"
     else:
         return "end"
@@ -528,6 +668,7 @@ builder = StateGraph(URLToTwitterState)
 # ノードを追加
 builder.add_node("extract_url", extract_url)
 builder.add_node("scrape_url", scrape_url)
+builder.add_node("extract_topic_and_research", extract_topic_and_research)
 builder.add_node("create_tweet", create_tweet)
 builder.add_node("post_tweet", post_tweet)
 builder.add_node("add_result_message", add_result_message)
@@ -545,6 +686,14 @@ builder.add_conditional_edges(
 builder.add_conditional_edges(
     "scrape_url",
     route_after_scrape_url,
+    {
+        "extract_topic_and_research": "extract_topic_and_research",
+        "end": END,
+    },
+)
+builder.add_conditional_edges(
+    "extract_topic_and_research",
+    route_after_extract_topic_and_research,
     {
         "create_tweet": "create_tweet",
         "end": END,
@@ -591,6 +740,8 @@ def run_url_to_twitter_agent(url: str, user_id: Optional[str] = None) -> Dict[st
         "user_id": user_id,
         "scraped_content": "",
         "scraped_data": {},
+        "topic": "",
+        "related_knowledge": "",
         "tweet_content": "",
         "tweet_result": "",
         "error": "",
@@ -603,6 +754,8 @@ def run_url_to_twitter_agent(url: str, user_id: Optional[str] = None) -> Dict[st
         "messages": result["messages"],
         "url": result.get("url", ""),
         "scraped_content": result.get("scraped_content", ""),
+        "topic": result.get("topic", ""),
+        "related_knowledge": result.get("related_knowledge", ""),
         "tweet_content": result.get("tweet_content", ""),
         "tweet_result": result.get("tweet_result", ""),
         "error": result.get("error", ""),
