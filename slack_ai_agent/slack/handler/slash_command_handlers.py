@@ -13,7 +13,7 @@ from slack_bolt import Say
 
 from slack_ai_agent.agents.tools.github_tools import create_github_issue
 from slack_ai_agent.slack.handler.conversation import get_thread_history
-from slack_ai_agent.slack.handler.utils import build_conversation_history
+from slack_ai_agent.slack.utils import build_conversation_history
 
 
 logger = logging.getLogger(__name__)
