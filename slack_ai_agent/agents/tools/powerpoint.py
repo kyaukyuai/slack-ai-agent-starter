@@ -48,10 +48,11 @@ def get_current_jst_time() -> str:
 
 
 # Define a type alias for Presentation to handle the case when python-pptx is not installed
+
 if PPTX_AVAILABLE:
     PresentationType = Presentation
 else:
-    PresentationType = Any
+    PresentationType = Any  # type: ignore[assignment]
 
 
 class SlideBase:

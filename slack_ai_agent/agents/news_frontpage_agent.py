@@ -90,9 +90,46 @@ class SmartBriefOutput(BaseModel):
 
 # LangGraphノード関数
 def fetch_url_contents_node(state: SmartBriefState, config=None):
-    """URLリストから記事情報を取得しstate.articlesに格納"""
+    """URLリストからコンテンツを取得し、簡易的なArticleオブジェクトを生成してstate.articlesに格納"""
+    import logging
+
+    logger = logging.getLogger(__name__)
     agent = SmartBriefAgent()
-    articles = agent.fetch_url_contents(state.urls)
+
+    # URLからコンテンツを取得
+    contents = agent.fetch_url_contents(state.urls)
+
+    # 簡易的なArticleオブジェクトを生成
+    articles = []
+    for i, (url, content) in enumerate(zip(state.urls, contents)):
+        try:
+            # URLからタイトルを生成
+            title = url.split("/")[-1] if "/" in url else f"記事{i + 1}"
+
+            # 抜粋を生成（最初の100文字）
+            excerpt = content[:100] if content else ""
+
+            # Articleオブジェクトを生成
+            articles.append(
+                Article(
+                    url=url,
+                    title=title,
+                    content=content,
+                    excerpt=excerpt,
+                )
+            )
+        except Exception as e:
+            logger.error(f"Error creating Article for URL {url}: {str(e)}")
+            # エラー時は空のArticleを追加
+            articles.append(
+                Article(
+                    url=url,
+                    title="",
+                    content="",
+                    excerpt="",
+                )
+            )
+
     return {**state.dict(), "articles": articles}
 
 
@@ -276,47 +313,44 @@ def search_related_info_node(state: SmartBriefState, config=None):
 class SmartBriefAgent:
     """スマートブリーフ生成エージェント本体"""
 
-    def fetch_url_contents(self, urls: List[str]) -> List[Article]:
-        """指定URLリストから記事情報（タイトル・本文・抜粋）を取得する
+    def fetch_url_contents(self, urls: List[str]) -> List[str]:
+        """指定URLリストからコンテンツを取得する（Article生成はLLMで行う）
 
         Args:
             urls (List[str]): 取得対象のURLリスト
 
         Returns:
-            List[Article]: 取得した記事情報リスト
+            List[str]: 取得したコンテンツのリスト
         """
+        import json
+        import logging
+
         from slack_ai_agent.agents.tools.firecrawl_scrape import firecrawl_scrape
 
-        articles: List[Article] = []
+        logger = logging.getLogger(__name__)
+        contents: List[str] = []
+
         for url in urls:
             try:
-                result = firecrawl_scrape(url=url)
-                content = result.get("content", "")
-                metadata = result.get("metadata", {})
-                title = metadata.get("title", "") if isinstance(metadata, dict) else ""
-                excerpt = content[:100] if content else ""
+                # summarize_agent.pyを参考にした直接的な呼び出し
+                scrape_result = firecrawl_scrape(url=url)
 
-                articles.append(
-                    Article(
-                        url=url,
-                        title=title,
-                        content=content,
-                        excerpt=excerpt,
-                        saved_at=datetime.now(),
-                    )
-                )
-            except Exception:
-                # エラー時は空データで埋める
-                articles.append(
-                    Article(
-                        url=url,
-                        title="",
-                        content="",
-                        excerpt="",
-                        saved_at=datetime.now(),
-                    )
-                )
-        return articles
+                # firecrawl_scrapeは辞書型を返すようなので、文字列に変換
+                if isinstance(scrape_result, dict):
+                    # 辞書型の場合はJSON文字列に変換
+                    content_str = json.dumps(scrape_result, ensure_ascii=False)
+                else:
+                    # すでに文字列の場合はそのまま使用
+                    content_str = str(scrape_result)
+
+                contents.append(content_str)
+            except Exception as e:
+                # 例外をログに記録
+                logger.error(f"Error scraping URL {url}: {str(e)}")
+                # エラー時は空文字列を追加
+                contents.append("")
+
+        return contents
 
     def cluster_articles(self, articles: List[Article]) -> List[ThemeCluster]:
         """記事リストを内容的に近いものでクラスタリングし、テーマごとにまとめる
