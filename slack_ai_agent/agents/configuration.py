@@ -53,7 +53,7 @@ class Configuration:
     writer_provider: WriterProvider = (
         WriterProvider.ANTHROPIC
     )  # Defaults to Anthropic as provider
-    writer_model: str = "claude-3-7-sonnet-latest"  # Defaults to Anthropic as provider
+    writer_model: str = "claude-sonnet-4-20250514"  # Defaults to Anthropic as provider
     search_api: SearchAPI = SearchAPI.PERPLEXITY  # Default to TAVILY
 
     @classmethod

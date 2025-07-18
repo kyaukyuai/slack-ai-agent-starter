@@ -26,7 +26,7 @@ def get_current_jst_time() -> str:
 
 
 # Initialize base model
-model = ChatAnthropic(model="claude-3-7-sonnet-latest", max_tokens_to_sample=8192)  # type: ignore
+model = ChatAnthropic(model="claude-sonnet-4-20250514", max_tokens_to_sample=64_000)  # type: ignore
 
 # Define the prompt template for the agent
 prompt = ChatPromptTemplate.from_messages(
