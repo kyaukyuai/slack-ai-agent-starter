@@ -16,6 +16,9 @@ from slack_bolt import App
 from slack_ai_agent.slack.handler import setup_action_handlers
 from slack_ai_agent.slack.handler import setup_event_handlers
 from slack_ai_agent.slack.handler import setup_message_handlers
+from slack_ai_agent.slack.handler.slash_command_handlers import (
+    register_slash_command_handlers,
+)
 
 
 logging.basicConfig(
@@ -71,6 +74,7 @@ class SlackBotApp:
         setup_message_handlers(self.app)
         setup_action_handlers(self.app)
         setup_event_handlers(self.app)
+        register_slash_command_handlers(self.app)
 
     def start(self, port: Optional[int] = None) -> None:
         """Start the Slack bot application.

@@ -15,6 +15,7 @@ A comprehensive toolkit for building and running AI-powered Slack bots using Lan
 - `help` - Display detailed usage instructions
 - `ai [question]` - Direct interaction with AI agent
 - `hello` - Interactive greeting with button interface
+- `/issue` - Create GitHub issue from thread conversation (uses Claude Code SDK)
 
 ### 3. Core Functionalities
 - Advanced natural language processing with LangGraph and LangChain
@@ -51,6 +52,10 @@ OPENAI_API_KEY=your-openai-api-key
 # LangGraph Configuration
 LANGGRAPH_URL=your-langgraph-url
 LANGGRAPH_TOKEN=your-langgraph-token
+
+# GitHub Configuration (for /issue command)
+GITHUB_TOKEN=your-github-personal-access-token
+GITHUB_REPOSITORY=owner/repo  # Default repository for issues
 ```
 
 ### Installation
@@ -81,6 +86,7 @@ make dev-web        # For Web server
 - Mention the bot: `@AI Assistant hello`
 - Use direct commands: `ai what's the weather?`
 - Get help: `help`
+- Create GitHub issue from thread: `/issue` (in thread) or `/issue [thread-link]`
 
 ### Best Practices
 1. Use threads for related conversations
@@ -94,14 +100,20 @@ slack_ai_agent/
 ├── agents/                # AI agent implementation
 │   ├── simple_agent.py   # LangGraph AI agent implementation
 │   ├── security/         # Security-related functionality
+│   ├── tools/           # Tool implementations
+│   │   └── github_tools.py  # GitHub API integration
 │   └── utils/
 │       ├── nodes.py      # Agent workflow nodes
 │       ├── tools.py      # Tool implementations
 │       └── types.py      # Type definitions
 ├── slack/
 │   ├── handler/          # Event, message, and action handlers
+│   │   └── slash_command_handlers.py  # Slash command handlers
 │   ├── app.py           # Main Slack app configuration
 │   └── utils.py         # Utility functions
+├── docs/                 # Documentation
+│   ├── setup-guide.md   # Setup instructions
+│   └── issue-command.md # /issue command guide
 └── README.md
 ```
 
@@ -114,6 +126,8 @@ slack_ai_agent/
 - `langchain_openai`: OpenAI model integration
 - `langchain_anthropic`: Anthropic model integration
 - `python-dotenv`: For environment variable management
+- `claude-code-sdk`: For AI-powered content generation
+- `requests`: For HTTP API calls
 
 ### Development Tools
 - `ruff`: For code linting
@@ -140,6 +154,10 @@ To add new capabilities:
 2. Update the agent workflow in `agents/simple_agent.py`
 3. Add any new environment variables to `.env`
 4. Update type definitions in `agents/utils/types.py` if needed
+
+### Documentation
+- [Setup Guide](docs/setup-guide.md) - Detailed setup instructions
+- [/issue Command Guide](docs/issue-command.md) - How to use the GitHub issue creation feature
 
 ## Contributing
 Contributions are welcome! Please feel free to submit a Pull Request.
